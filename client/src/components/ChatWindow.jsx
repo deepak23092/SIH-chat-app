@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { ChatContext } from "../context/ChatContext";
-import { sendMessage, getMessages } from "../services/api";
+import { getMessages } from "../services/api";
 
 const ChatWindow = () => {
   const { currentUser, selectedUser, messages, setMessages, socket } =
@@ -12,9 +12,11 @@ const ChatWindow = () => {
       if (selectedUser) {
         try {
           const { data } = await getMessages(currentUser.id, selectedUser._id);
+
+          // Add fetched messages to the context under the selected user's ID
           setMessages((prev) => ({
             ...prev,
-            [selectedUser._id]: data.messages,
+            [selectedUser._id]: data,
           }));
         } catch (error) {
           console.error("Error fetching messages:", error);
@@ -23,6 +25,7 @@ const ChatWindow = () => {
     };
     fetchMessages();
 
+    // Listen for incoming messages from the selected user
     socket.on("receive-message", (message) => {
       if (message.senderId === selectedUser._id) {
         setMessages((prev) => ({
@@ -43,6 +46,7 @@ const ChatWindow = () => {
         senderId: currentUser.id,
         receiverId: selectedUser._id,
         content: newMessage,
+        timestamp: new Date().toISOString(),
       };
 
       socket.emit("send-message", messageData);
@@ -55,12 +59,6 @@ const ChatWindow = () => {
         ],
       }));
       setNewMessage("");
-
-      try {
-        await sendMessage(messageData);
-      } catch (error) {
-        console.error("Message failed to send:", error);
-      }
     }
   };
 
@@ -77,22 +75,21 @@ const ChatWindow = () => {
             {userMessages.map((msg) => (
               <div
                 key={msg._id || Math.random()}
-                className={`p-2 my-2 ${
-                  msg.senderId === currentUser.id ? "text-right" : "text-left"
+                className={`p-2 my-2 flex ${
+                  msg.sender === currentUser.id
+                    ? "justify-end"
+                    : "justify-start"
                 }`}
               >
-                <span
-                  className={`inline-block px-4 py-2 rounded-lg ${
-                    msg.senderId === currentUser.id
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200"
-                  }`}
+                <div
+                  className={`inline-block px-4 py-2 rounded-lg text-sm max-w-xs bg-blue-200 text-black`}
                 >
-                  {msg.content}
-                </span>
+                  <p>{msg.content}</p>
+                </div>
               </div>
             ))}
           </div>
+
           <div className="p-4 border-t">
             <input
               type="text"

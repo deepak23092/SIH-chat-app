@@ -16,18 +16,27 @@ module.exports = (io) => {
 
     socket.on("send-message", async ({ senderId, receiverId, content }) => {
       try {
-        // Fetch receiver's language preference
+        // Fetch sender and receiver language preferences
+        const sender = await User.findById(senderId);
         const receiver = await User.findById(receiverId);
-        if (!receiver) {
-          console.error("Receiver not found.");
+
+        if (!sender || !receiver) {
+          console.error("Sender or receiver not found.");
           return;
         }
 
-        // Translate message content to receiver's preferred language
-        const translatedContent = await translateText(
-          content,
-          receiver.language
-        );
+        let translatedContent = content;
+
+        // Only translate if sender's language differs from receiver's language
+        if (sender.language !== receiver.language) {
+          console.log(
+            `Translating message from '${sender.language}' to '${receiver.language}'`
+          );
+          translatedContent = await translateText(content, receiver.language);
+          console.log("Translated contentt:", translatedContent);
+        } else {
+          console.log("No translation needed.");
+        }
 
         // Save the original and translated message to the database
         const message = new Message({
@@ -43,8 +52,8 @@ module.exports = (io) => {
           _id: message._id,
           senderId,
           receiverId,
-          content: translatedContent, // Send the translated content
-          originalContent: content, // Optionally include the original content
+          content: translatedContent,
+          originalContent: content,
           createdAt: message.createdAt,
         });
       } catch (error) {

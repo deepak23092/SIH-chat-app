@@ -4,7 +4,8 @@ import { getUserList } from "../services/api";
 import { getMessages } from "../services/api";
 
 const ChatList = () => {
-  const { currentUser, setSelectedUser, setMessages } = useContext(ChatContext);
+  const { currentUser, setSelectedUser, messages, setMessages } =
+    useContext(ChatContext);
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
@@ -21,7 +22,13 @@ const ChatList = () => {
     try {
       // Fetch chat messages from the server
       const { data } = await getMessages(currentUser.id, user._id);
-      setMessages(data.messages); // Update the chat history
+
+      setMessages((prev) => ({
+        ...prev,
+        [user._id]: data,
+      }));
+
+      console.log("Fetched messages for user:", user._id, data);
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
