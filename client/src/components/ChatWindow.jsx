@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ChatContext } from "../context/ChatContext";
 import { getMessages } from "../services/api";
@@ -11,6 +11,7 @@ const ChatWindow = () => {
   const [offer, setOffer] = useState("");
   const [activeTab, setActiveTab] = useState("CHAT"); // Active tab: CHAT or MAKE OFFER
   const presetPrices = [9500, 9000, 8500, 8000, 7600];
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -44,6 +45,11 @@ const ChatWindow = () => {
       socket.off("receive-message");
     };
   }, [selectedUser, setMessages, socket]);
+
+  useEffect(() => {
+    // Scroll to the bottom of the chat messages whenever they are updated
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages[selectedUser?._id]]);
 
   const handleSend = async () => {
     if (newMessage.trim()) {
@@ -123,9 +129,10 @@ const ChatWindow = () => {
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef}></div>
           </div>
 
-          <div className="flex items-center border-b">
+          <div className="flex items-center border">
             <button
               className={`flex-1 p-4 ${
                 activeTab === "CHAT" ? "bg-gray-200 font-bold" : "bg-white"
@@ -147,8 +154,8 @@ const ChatWindow = () => {
           </div>
 
           {activeTab === "CHAT" ? (
-            <div className="p-4 border-t">
-              <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-col p-4">
+              <div className="flex gap-2 mb-4">
                 {[
                   "is it available?",
                   "what's your location?",
@@ -158,7 +165,7 @@ const ChatWindow = () => {
                 ].map((quickMessage, index) => (
                   <button
                     key={index}
-                    className="px-3 py-1 bg-gray-200 rounded"
+                    className="px-4 py-2 bg-gray-200 rounded"
                     onClick={() => setNewMessage(quickMessage)}
                   >
                     {quickMessage}
@@ -211,11 +218,6 @@ const ChatWindow = () => {
                   Send
                 </button>
               </div>
-              {offer && (
-                <p className="mt-2 p-2 bg-green-100 rounded">
-                  Very good offer! High chances of seller's reply.
-                </p>
-              )}
             </div>
           )}
         </>
