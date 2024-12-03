@@ -4,7 +4,7 @@ const cors = require("cors");
 
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
-const chatRoutes = require("./routes/chatRoutes");
+const conversation = require("./routes/conversation");
 
 const app = express();
 connectDB();
@@ -16,6 +16,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/chat", chatRoutes);
+app.use("/api/conversation", conversation);
 
 module.exports = app;

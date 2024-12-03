@@ -7,6 +7,6 @@ export const login = async (credentials) =>
 export const register = async (userData) =>
   axios.post(`${BASE_URL}/auth/register`, userData);
 export const getUserList = async (userId) =>
-  axios.get(`${BASE_URL}/auth/users/${userId}`);
+  axios.get(`${BASE_URL}/conversation/chats/${userId}`);
 export const getMessages = async (senderId, receiverId) =>
-  axios.get(`${BASE_URL}/chat/${senderId}/${receiverId}`);
+  axios.get(`${BASE_URL}/conversation/${senderId}/${receiverId}`);

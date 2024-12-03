@@ -64,6 +64,8 @@ const ChatWindow = () => {
 
   const userMessages = messages[selectedUser?._id] || [];
 
+  console.log("userMessages: ", userMessages);
+
   return (
     <div className="w-2/3 h-screen flex flex-col">
       {selectedUser ? (
@@ -76,7 +78,7 @@ const ChatWindow = () => {
               <div
                 key={msg._id || Math.random()}
                 className={`p-2 my-2 flex ${
-                  msg.sender === currentUser.id
+                  msg.senderId === currentUser.id
                     ? "justify-end"
                     : "justify-start"
                 }`}
