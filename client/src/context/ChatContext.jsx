@@ -29,10 +29,12 @@ export const ChatProvider = ({ children }) => {
 
       // Handle incoming messages
       newSocket.on("receive-message", (message) => {
-        setMessages((prev) => ({
-          ...prev,
-          [message.senderId]: [...(prev[message.senderId] || []), message],
-        }));
+        if (message.receiverId === currentUser.id) {
+          setMessages((prev) => ({
+            ...prev,
+            [message.senderId]: [...(prev[message.senderId] || []), message],
+          }));
+        }
       });
 
       newSocket.on("connect_error", (error) => {

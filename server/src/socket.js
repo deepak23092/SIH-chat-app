@@ -45,7 +45,10 @@ module.exports = (io) => {
           receiverId,
           content: translatedContent, // Send the translated content
           originalContent: content, // Optionally include the original content
-          createdAt: message.createdAt,
+          // createdAt: message.createdAt,
+          createdAt: new Date(Date.now()).getHours() +
+          ":" +
+          new Date(Date.now()).getMinutes().toString().padStart(2, "0"),
         });
       } catch (error) {
         console.error("Error handling send-message:", error);
