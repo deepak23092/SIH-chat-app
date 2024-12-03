@@ -74,12 +74,12 @@ module.exports = (io) => {
 
         // Emit the message to the receiver's room
         io.to(receiverId).emit("receive-message", {
-          _id: newMessage._id, // MongoDB ObjectId for the new message
+          _id: newMessage._id,
           senderId,
           receiverId,
           content: translatedContent,
           originalContent: content,
-          createdAt: newMessage.createdAt,
+          timestamp: newMessage.createdAt,
         });
       } catch (error) {
         console.error("Error handling send-message:", error.message);

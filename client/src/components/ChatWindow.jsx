@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
+import { format } from "date-fns";
 import { ChatContext } from "../context/ChatContext";
 import { getMessages } from "../services/api";
 
@@ -64,8 +65,6 @@ const ChatWindow = () => {
 
   const userMessages = messages[selectedUser?._id] || [];
 
-  console.log("userMessages: ", userMessages);
-
   return (
     <div className="w-2/3 h-screen flex flex-col">
       {selectedUser ? (
@@ -84,9 +83,16 @@ const ChatWindow = () => {
                 }`}
               >
                 <div
-                  className={`inline-block px-4 py-2 rounded-lg text-sm max-w-xs bg-blue-200 text-black`}
+                  className={`inline-block px-4 py-2 rounded-lg text-sm max-w-xs ${
+                    msg.senderId === currentUser.id
+                      ? "bg-blue-200 text-black"
+                      : "bg-gray-300 text-black"
+                  }`}
                 >
                   <p>{msg.content}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {format(new Date(msg.timestamp), "hh:mm a, MMM d")}
+                  </p>
                 </div>
               </div>
             ))}
