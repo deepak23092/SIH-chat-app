@@ -8,6 +8,10 @@ const ChatWindow = () => {
     useContext(ChatContext);
   const [newMessage, setNewMessage] = useState("");
 
+  const [offer, setOffer] = useState("");
+  const [activeTab, setActiveTab] = useState("CHAT"); // Active tab: CHAT or MAKE OFFER
+  const presetPrices = [9500, 9000, 8500, 8000, 7600];
+
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedUser) {
@@ -63,6 +67,29 @@ const ChatWindow = () => {
     }
   };
 
+  const handleMakeOffer = () => {
+    if (offer.trim()) {
+      const offerMessage = `Offer: ₹${offer}`;
+      const messageData = {
+        senderId: currentUser.id,
+        receiverId: selectedUser._id,
+        content: offerMessage,
+        timestamp: new Date().toISOString(),
+      };
+
+      socket.emit("send-message", messageData);
+
+      setMessages((prev) => ({
+        ...prev,
+        [selectedUser._id]: [
+          ...(prev[selectedUser._id] || []),
+          { ...messageData, sender: currentUser.id, _id: Math.random() },
+        ],
+      }));
+      setOffer("");
+    }
+  };
+
   const userMessages = messages[selectedUser?._id] || [];
 
   return (
@@ -98,21 +125,99 @@ const ChatWindow = () => {
             ))}
           </div>
 
-          <div className="p-4 border-t">
-            <input
-              type="text"
-              className="w-full p-2 border rounded"
-              placeholder="Type a message"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-            />
+          <div className="flex items-center border-b">
             <button
-              className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-              onClick={handleSend}
+              className={`flex-1 p-4 ${
+                activeTab === "CHAT" ? "bg-gray-200 font-bold" : "bg-white"
+              }`}
+              onClick={() => setActiveTab("CHAT")}
             >
-              Send
+              CHAT
+            </button>
+            <button
+              className={`flex-1 p-4 ${
+                activeTab === "MAKE OFFER"
+                  ? "bg-gray-200 font-bold"
+                  : "bg-white"
+              }`}
+              onClick={() => setActiveTab("MAKE OFFER")}
+            >
+              MAKE OFFER
             </button>
           </div>
+
+          {activeTab === "CHAT" ? (
+            <div className="p-4 border-t">
+              <div className="flex flex-wrap gap-2 mb-2">
+                {[
+                  "is it available?",
+                  "what's your location?",
+                  "make an offer",
+                  "are you there?",
+                  "please reply",
+                ].map((quickMessage, index) => (
+                  <button
+                    key={index}
+                    className="px-3 py-1 bg-gray-200 rounded"
+                    onClick={() => setNewMessage(quickMessage)}
+                  >
+                    {quickMessage}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  className="flex-1 p-2 border rounded"
+                  placeholder="Type a message"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                />
+                <button
+                  className="ml-2 px-4 py-2 bg-blue-500 text-white rounded"
+                  onClick={handleSend}
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col p-4">
+              <div className="flex gap-2 mb-4">
+                {presetPrices.map((price, index) => (
+                  <button
+                    key={index}
+                    className={`px-4 py-2 rounded border ${
+                      offer === price.toString() ? "bg-gray-200" : "bg-white"
+                    }`}
+                    onClick={() => setOffer(price.toString())}
+                  >
+                    ₹ {price.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="flex-1 p-2 border rounded"
+                  placeholder="Enter your offer"
+                  value={offer}
+                  onChange={(e) => setOffer(e.target.value)}
+                />
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  onClick={handleMakeOffer}
+                >
+                  Send
+                </button>
+              </div>
+              {offer && (
+                <p className="mt-2 p-2 bg-green-100 rounded">
+                  Very good offer! High chances of seller's reply.
+                </p>
+              )}
+            </div>
+          )}
         </>
       ) : (
         <div className="flex-grow flex items-center justify-center">
