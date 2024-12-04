@@ -142,11 +142,19 @@ const ChatWindow = ({ onBack }) => {
           </h2>
 
           {/* Product Details */}
-          <div className="p-4 bg-white shadow">
-            <h3 className="font-bold text-lg">{product.name}</h3>
-            <p>Price: ₹{product.price} per kg</p>
-            <p>Quantity: {product.quantity}</p>
-          </div>
+          {product ? (
+            <div className="p-4 bg-white shadow">
+              <h3 className="font-bold text-lg">{product.name}</h3>
+              <p>Price: ₹{product.price} per kg</p>
+              <p>Quantity: {product.quantity}</p>
+            </div>
+          ) : (
+            <div className="p-4 bg-white shadow">
+              <p className="text-sm text-gray-500">
+                Loading product details...
+              </p>
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
