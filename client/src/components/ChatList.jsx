@@ -45,15 +45,28 @@ const ChatList = () => {
       const lastMessage = userMessages[userMessages.length - 1];
       return {
         content: lastMessage.content,
-        timestamp: format(new Date(lastMessage.timestamp), "dd/MM/yy, HH:mm"),
+        timestamp: lastMessage.timestamp,
+        formattedTimestamp: format(new Date(lastMessage.timestamp), "dd/MM/yy, HH:mm"),
       };
     }
     return null;
   };
 
+  // Filter users based on search query
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Sort filtered users by the timestamp of the last message in descending order
+  const sortedUsers = filteredUsers.sort((a, b) => {
+    const lastMessageA = getLastMessage(a._id);
+    const lastMessageB = getLastMessage(b._id);
+
+    const timestampA = lastMessageA ? new Date(lastMessageA.timestamp).getTime() : 0;
+    const timestampB = lastMessageB ? new Date(lastMessageB.timestamp).getTime() : 0;
+
+    return timestampB - timestampA; // Descending order
+  });
 
   return (
     <div className="w-1/3 h-screen border-r border-gray-300 flex flex-col">
@@ -74,7 +87,7 @@ const ChatList = () => {
 
       {/* User List */}
       <div className="overflow-y-auto flex-grow bg-white">
-        {filteredUsers.map((user) => {
+        {sortedUsers.map((user) => {
           const lastMessage = getLastMessage(user._id);
           return (
             <div
@@ -99,7 +112,7 @@ const ChatList = () => {
                 </div>
               </div>
               <div className="text-sm text-gray-400">
-                {lastMessage ? lastMessage.timestamp : ""}
+                {lastMessage ? lastMessage.formattedTimestamp : ""}
               </div>
             </div>
           );
