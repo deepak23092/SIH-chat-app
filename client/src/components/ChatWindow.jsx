@@ -7,9 +7,8 @@ const ChatWindow = () => {
   const { currentUser, selectedUser, messages, setMessages, socket } =
     useContext(ChatContext);
   const [newMessage, setNewMessage] = useState("");
-
   const [offer, setOffer] = useState("");
-  const [activeTab, setActiveTab] = useState("CHAT"); // Active tab: CHAT or MAKE OFFER
+  const [activeTab, setActiveTab] = useState("CHAT");
   const presetPrices = [9500, 9000, 8500, 8000, 7600];
   const messagesEndRef = useRef(null);
 
@@ -99,12 +98,15 @@ const ChatWindow = () => {
   const userMessages = messages[selectedUser?._id] || [];
 
   return (
-    <div className="w-2/3 h-screen flex flex-col">
+    <div className="w-full h-screen flex flex-col">
       {selectedUser ? (
         <>
-          <h2 className="text-lg font-bold p-4">
+          {/* Header */}
+          <h2 className="text-lg font-bold p-4 bg-gray-100">
             Chat with {selectedUser.name}
           </h2>
+
+          {/* Messages */}
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
             {userMessages.map((msg) => (
               <div
@@ -116,7 +118,7 @@ const ChatWindow = () => {
                 }`}
               >
                 <div
-                  className={`inline-block px-4 py-2 rounded-lg text-sm max-w-xs ${
+                  className={`inline-block px-4 py-2 rounded-lg text-sm max-w-xs md:max-w-md ${
                     msg.senderId === currentUser.id
                       ? "bg-blue-200 text-black"
                       : "bg-gray-300 text-black"
@@ -132,9 +134,10 @@ const ChatWindow = () => {
             <div ref={messagesEndRef}></div>
           </div>
 
-          <div className="flex items-center border">
+          {/* Tabs */}
+          <div className="flex items-center border bg-gray-100">
             <button
-              className={`flex-1 p-4 ${
+              className={`flex-1 p-2 sm:p-4 ${
                 activeTab === "CHAT" ? "bg-gray-200 font-bold" : "bg-white"
               }`}
               onClick={() => setActiveTab("CHAT")}
@@ -142,7 +145,7 @@ const ChatWindow = () => {
               CHAT
             </button>
             <button
-              className={`flex-1 p-4 ${
+              className={`flex-1 p-2 sm:p-4 ${
                 activeTab === "MAKE OFFER"
                   ? "bg-gray-200 font-bold"
                   : "bg-white"
@@ -153,9 +156,10 @@ const ChatWindow = () => {
             </button>
           </div>
 
+          {/* Input Area */}
           {activeTab === "CHAT" ? (
-            <div className="flex flex-col p-4">
-              <div className="flex gap-2 mb-4">
+            <div className="flex flex-col p-2 sm:p-4">
+              <div className="flex flex-wrap gap-2 mb-2 sm:mb-4">
                 {[
                   "is it available?",
                   "what's your location?",
@@ -165,23 +169,23 @@ const ChatWindow = () => {
                 ].map((quickMessage, index) => (
                   <button
                     key={index}
-                    className="px-4 py-2 bg-gray-200 rounded"
+                    className="px-2 py-1 sm:px-4 sm:py-2 bg-gray-200 rounded text-sm"
                     onClick={() => setNewMessage(quickMessage)}
                   >
                     {quickMessage}
                   </button>
                 ))}
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  className="flex-1 p-2 border rounded"
+                  className="flex-1 p-2 border rounded text-sm"
                   placeholder="Type a message"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                 />
                 <button
-                  className="ml-2 px-4 py-2 bg-blue-500 text-white rounded"
+                  className="px-2 sm:px-4 py-2 bg-blue-500 text-white rounded text-sm"
                   onClick={handleSend}
                 >
                   Send
@@ -189,8 +193,8 @@ const ChatWindow = () => {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col p-4">
-              <div className="flex gap-2 mb-4">
+            <div className="flex flex-col p-2 sm:p-4">
+              <div className="flex flex-wrap gap-2 mb-2 sm:mb-4">
                 {presetPrices.map((price, index) => (
                   <button
                     key={index}
@@ -206,13 +210,13 @@ const ChatWindow = () => {
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  className="flex-1 p-2 border rounded"
+                  className="flex-1 p-2 border rounded text-sm"
                   placeholder="Enter your offer"
                   value={offer}
                   onChange={(e) => setOffer(e.target.value)}
                 />
                 <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  className="px-2 sm:px-4 py-2 bg-blue-500 text-white rounded text-sm"
                   onClick={handleMakeOffer}
                 >
                   Send
@@ -222,8 +226,10 @@ const ChatWindow = () => {
           )}
         </>
       ) : (
-        <div className="flex-grow flex items-center justify-center">
-          <p>Select a user to start chatting.</p>
+        <div className="flex-grow flex items-center justify-center text-center p-4">
+          <p className="text-sm sm:text-base">
+            Select a user to start chatting.
+          </p>
         </div>
       )}
     </div>

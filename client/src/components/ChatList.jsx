@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import Image from "../assets/images/levi.jpg";
 import { FiSearch } from "react-icons/fi";
 
-const ChatList = () => {
+const ChatList = ({ onSelectChat }) => {
   const { currentUser, selectedUser, setSelectedUser, messages, setMessages } =
     useContext(ChatContext);
   const [users, setUsers] = useState([]);
@@ -25,6 +25,7 @@ const ChatList = () => {
 
   const handleUserClick = async (user) => {
     setSelectedUser(user);
+    onSelectChat(user);
 
     if (!messages[user._id]) {
       try {
@@ -46,35 +47,39 @@ const ChatList = () => {
       return {
         content: lastMessage.content,
         timestamp: lastMessage.timestamp,
-        formattedTimestamp: format(new Date(lastMessage.timestamp), "dd/MM/yy, HH:mm"),
+        formattedTimestamp: format(
+          new Date(lastMessage.timestamp),
+          "dd/MM/yy, HH:mm"
+        ),
       };
     }
     return null;
   };
 
-  // Filter users based on search query
   const filteredUsers = users.filter((user) =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Sort filtered users by the timestamp of the last message in descending order
   const sortedUsers = filteredUsers.sort((a, b) => {
     const lastMessageA = getLastMessage(a._id);
     const lastMessageB = getLastMessage(b._id);
 
-    const timestampA = lastMessageA ? new Date(lastMessageA.timestamp).getTime() : 0;
-    const timestampB = lastMessageB ? new Date(lastMessageB.timestamp).getTime() : 0;
+    const timestampA = lastMessageA
+      ? new Date(lastMessageA.timestamp).getTime()
+      : 0;
+    const timestampB = lastMessageB
+      ? new Date(lastMessageB.timestamp).getTime()
+      : 0;
 
-    return timestampB - timestampA; // Descending order
+    return timestampB - timestampA;
   });
 
   return (
-    <div className="w-1/3 h-screen border-r border-gray-300 flex flex-col">
-      {/* Header and Search Bar */}
+    <div className="w-full md:w-96 h-screen border-r border-gray-300 flex flex-col">
       <div className="p-4 border-b bg-gray-100">
         <h2 className="text-lg font-bold">INBOX</h2>
         <div className="mt-2 flex items-center border rounded p-2 bg-white">
-          <FiSearch className="text-gray-400 h-5 w-5" /> {/* React Icon here */}
+          <FiSearch className="text-gray-400 h-5 w-5" />
           <input
             type="text"
             placeholder="Search"
@@ -84,8 +89,6 @@ const ChatList = () => {
           />
         </div>
       </div>
-
-      {/* User List */}
       <div className="overflow-y-auto flex-grow bg-white">
         {sortedUsers.map((user) => {
           const lastMessage = getLastMessage(user._id);
@@ -98,7 +101,6 @@ const ChatList = () => {
               onClick={() => handleUserClick(user)}
             >
               <div className="flex items-center">
-                {/* User Image */}
                 <img
                   src={user.image || Image}
                   alt={user.name}
