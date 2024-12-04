@@ -8,9 +8,15 @@ const ChatWindow = () => {
     useContext(ChatContext);
   const [newMessage, setNewMessage] = useState("");
 
+  const productName = "Organic Apples";  // Static product name
+  const productPrice = 9500;  // Static product price
+  const MSP = productPrice - 0.2 * productPrice;
+  const [offerPrice, setOfferPrice] = useState(MSP);
+
   const [offer, setOffer] = useState("");
   const [activeTab, setActiveTab] = useState("CHAT"); // Active tab: CHAT or MAKE OFFER
-  const presetPrices = [9500, 9000, 8500, 8000, 7600];
+  const presetPrices = [productPrice ,productPrice - 0.01*productPrice, productPrice - 0.02*productPrice , productPrice - 0.05*productPrice, productPrice - 0.1*productPrice, productPrice - 0.15*productPrice];
+  const [showDisclaimer, setShowDisclaimer] = useState(false); // To track if disclaimer should be shown
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -75,6 +81,22 @@ const ChatWindow = () => {
 
   const handleMakeOffer = () => {
     if (offer.trim()) {
+      // Check if the offer is less than MSP
+      if (parseFloat(offer) < MSP) {
+        setShowDisclaimer(true); // Show disclaimer if the offer is less than MSP
+      } else {
+        setShowDisclaimer(false); // Hide disclaimer if the offer is valid
+      }
+
+      // Check if the new offer is greater than the previous offer
+      if (parseFloat(offer) > offerPrice) {
+        console.log(`Previous Offer Price: ₹${offerPrice}`);
+        console.log(`Updated Offer Price: ₹${offer}`);
+
+        // Update the offerPrice to the new offer value
+        setOfferPrice(offer);  // Update the offer price
+      }
+
       const offerMessage = `Offer: ₹${offer}`;
       const messageData = {
         senderId: currentUser.id,
@@ -98,13 +120,32 @@ const ChatWindow = () => {
 
   const userMessages = messages[selectedUser?._id] || [];
 
+  // Check if the offer is less than MSP whenever the user types in the input field
+  const handleOfferChange = (e) => {
+    const value = e.target.value;
+    setOffer(value);
+    if (parseFloat(value) < MSP) {
+      setShowDisclaimer(true); // Show disclaimer if the offer is less than MSP
+    } else {
+      setShowDisclaimer(false); // Hide disclaimer if the offer is valid
+    }
+  };
+
   return (
     <div className="w-2/3 h-screen flex flex-col">
       {selectedUser ? (
         <>
-          <h2 className="text-lg font-bold p-4">
+          <h2 className="text-lg font-bold p-3">
             Chat with {selectedUser.name}
           </h2>
+          <div className="p-4 bg-gray-100 border-b flex justify-start items-center">
+            <p className="text-sm text-gray-600 pr-4">
+              <span className="font-semibold">Product Name:</span> {productName}
+            </p>
+            <p className="text-sm text-gray-600 pl-4">
+              <span className="font-semibold">Product Price:</span>{productPrice}
+            </p>
+          </div>
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
             {userMessages.map((msg) => (
               <div
@@ -199,31 +240,39 @@ const ChatWindow = () => {
                     }`}
                     onClick={() => setOffer(price.toString())}
                   >
-                    ₹ {price.toLocaleString()}
+                    ₹{price.toLocaleString()}
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <span className={`text-green-500 font-bold text-3xl`}>₹</span>
                 <input
-                  type="text"
+                  type="number"
                   className="flex-1 p-2 border rounded"
                   placeholder="Enter your offer"
                   value={offer}
-                  onChange={(e) => setOffer(e.target.value)}
+                  onChange={handleOfferChange} // Track offer input change
                 />
                 <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                  className="ml-2 px-4 py-2 bg-blue-500 text-white rounded"
                   onClick={handleMakeOffer}
                 >
-                  Send
+                  Send Offer
                 </button>
               </div>
+
+              {/* Disclaimer text */}
+              {showDisclaimer && (
+                <p className="text-red-500 text-sm mt-2">
+                  May be the farmer will not sell you at this price.
+                </p>
+              )}
             </div>
           )}
         </>
       ) : (
-        <div className="flex-grow flex items-center justify-center">
-          <p>Select a user to start chatting.</p>
+        <div className="flex justify-center items-center h-full">
+          <p>Select a user to start chatting</p>
         </div>
       )}
     </div>
