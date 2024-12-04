@@ -75,7 +75,7 @@ const ChatList = ({ onSelectChat }) => {
   });
 
   return (
-    <div className="w-full md:w-96 h-screen border-r border-gray-300 flex flex-col">
+    <div className="w-full md:w-[30rem] h-screen border-r border-gray-300 flex flex-col">
       <div className="p-4 border-b bg-gray-100">
         <h2 className="text-lg font-bold">INBOX</h2>
         <div className="mt-2 flex items-center border rounded p-2 bg-white">
@@ -109,7 +109,9 @@ const ChatList = ({ onSelectChat }) => {
                 <div>
                   <p className="font-medium">{user.name}</p>
                   <p className="text-sm text-gray-500 truncate">
-                    {lastMessage ? lastMessage.content : ""}
+                    {lastMessage
+                      ? `${lastMessage.content.substring(0, 20)}...`
+                      : ""}
                   </p>
                 </div>
               </div>

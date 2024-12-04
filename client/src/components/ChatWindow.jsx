@@ -2,10 +2,17 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ChatContext } from "../context/ChatContext";
 import { getMessages } from "../services/api";
+import { FiArrowLeft } from "react-icons/fi";
 
-const ChatWindow = () => {
-  const { currentUser, selectedUser, messages, setMessages, socket } =
-    useContext(ChatContext);
+const ChatWindow = ({ onBack }) => {
+  const {
+    currentUser,
+    selectedUser,
+    setSelectedUser,
+    messages,
+    setMessages,
+    socket,
+  } = useContext(ChatContext);
   const [newMessage, setNewMessage] = useState("");
   const [offer, setOffer] = useState("");
   const [activeTab, setActiveTab] = useState("CHAT");
@@ -102,7 +109,16 @@ const ChatWindow = () => {
       {selectedUser ? (
         <>
           {/* Header */}
-          <h2 className="text-lg font-bold p-4 bg-gray-100">
+          <h2 className="flex items-center text-lg font-bold p-4 bg-gray-100">
+            <button
+              onClick={() => {
+                setSelectedUser(null);
+                onBack();
+              }}
+              className="mr-2 text-gray-600 hover:text-gray-900"
+            >
+              <FiArrowLeft size={20} />
+            </button>
             Chat with {selectedUser.name}
           </h2>
 
