@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { login } from "../services/api";
 import { ChatContext } from "../context/ChatContext";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,15 @@ const Login = () => {
   const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const { setCurrentUser } = useContext(ChatContext);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userDetails");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setCurrentUser(user);
+      navigate(`/chat/2/674b1a15167d05f142b21467`); // Navigate to the chat page with user's ID
+    }
+  }, [navigate, setCurrentUser]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
