@@ -20,7 +20,7 @@ const Login = () => {
 
       setCurrentUser(data.user);
 
-      navigate("/chat");
+      navigate("/chat/2/674f4583c8aa8845cea770d8");
     } catch (err) {
       setError("Invalid credentials. Please try again.");
     }

@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useContext } from "react";
 import { ChatContext } from "../context/ChatContext";
-import { getUserList, getMessages } from "../services/api";
+import { getUserList, getMessages, getSingleUser } from "../services/api";
 import { format } from "date-fns";
-import Image from "../assets/images/levi.jpg";
 import { FiSearch } from "react-icons/fi";
+import { useNavigate, useParams } from "react-router-dom";
+import Image from "../assets/images/levi.jpg";
 
 const ChatList = ({ onSelectChat }) => {
   const { currentUser, selectedUser, setSelectedUser, messages, setMessages } =
@@ -11,21 +12,47 @@ const ChatList = ({ onSelectChat }) => {
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const navigate = useNavigate();
+  const { user_id } = useParams();
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const { data } = await getUserList(currentUser.id);
         setUsers(data);
+
+        if (user_id) {
+          const existingUser = data.find((user) => user._id === user_id);
+
+          if (existingUser) {
+            setSelectedUser(existingUser);
+            onSelectChat(existingUser);
+          } else {
+            const { data: newUser } = await getSingleUser(user_id);
+            if (newUser) {
+              setUsers((prev) => {
+                const isUserAlreadyPresent = prev.some(
+                  (user) => user._id === newUser._id
+                );
+                return isUserAlreadyPresent ? prev : [...prev, newUser];
+              });
+              setSelectedUser(newUser);
+              onSelectChat(newUser);
+            }
+          }
+        }
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Error fetching users or single user:", error);
       }
     };
+
     fetchUsers();
-  }, [currentUser]);
+  }, [currentUser, user_id, onSelectChat, setSelectedUser]);
 
   const handleUserClick = async (user) => {
     setSelectedUser(user);
     onSelectChat(user);
+    navigate(`/chat/1/${user._id}`);
 
     if (!messages[user._id]) {
       try {

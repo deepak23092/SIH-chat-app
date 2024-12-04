@@ -3,6 +3,13 @@ import { format } from "date-fns";
 import { ChatContext } from "../context/ChatContext";
 import { getMessages } from "../services/api";
 import { FiArrowLeft } from "react-icons/fi";
+import { useParams } from "react-router-dom";
+
+// Sample Product JSON
+const demoProducts = {
+  1: { name: "Tomatoes", price: 50, quantity: "10 kg", farmerId: "123" },
+  2: { name: "Potatoes", price: 30, quantity: "20 kg", farmerId: "124" },
+};
 
 const ChatWindow = ({ onBack }) => {
   const {
@@ -13,11 +20,23 @@ const ChatWindow = ({ onBack }) => {
     setMessages,
     socket,
   } = useContext(ChatContext);
+
+  const { product_id } = useParams();
+
   const [newMessage, setNewMessage] = useState("");
   const [offer, setOffer] = useState("");
   const [activeTab, setActiveTab] = useState("CHAT");
   const presetPrices = [9500, 9000, 8500, 8000, 7600];
   const messagesEndRef = useRef(null);
+
+  const [product, setProduct] = useState(null);
+
+  useEffect(() => {
+    // Fetch product details from demo JSON
+    if (product_id) {
+      setProduct(demoProducts[product_id]);
+    }
+  }, [product_id]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -121,6 +140,13 @@ const ChatWindow = ({ onBack }) => {
             </button>
             Chat with {selectedUser.name}
           </h2>
+
+          {/* Product Details */}
+          <div className="p-4 bg-white shadow">
+            <h3 className="font-bold text-lg">{product.name}</h3>
+            <p>Price: ₹{product.price} per kg</p>
+            <p>Quantity: {product.quantity}</p>
+          </div>
 
           {/* Messages */}
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">

@@ -10,3 +10,5 @@ export const getUserList = async (userId) =>
   axios.get(`${BASE_URL}/conversation/chats/${userId}`);
 export const getMessages = async (senderId, receiverId) =>
   axios.get(`${BASE_URL}/conversation/${senderId}/${receiverId}`);
+export const getSingleUser = async (userId) =>
+  axios.get(`${BASE_URL}/auth/getUser/${userId}`);

@@ -18,7 +18,7 @@ const App = () => {
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route
-            path="/chat"
+            path="/chat/:product_id/:user_id"
             element={
               <div className="flex">
                 {isMobile ? (
