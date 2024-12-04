@@ -15,7 +15,7 @@ const Login = () => {
     if (storedUser) {
       const user = JSON.parse(storedUser);
       setCurrentUser(user);
-      navigate(`/chat/2/674b1a15167d05f142b21467`); // Navigate to the chat page with user's ID
+      navigate(`/chat`);
     }
   }, [navigate, setCurrentUser]);
 
@@ -29,7 +29,7 @@ const Login = () => {
 
       setCurrentUser(data.user);
 
-      navigate("/chat/2/674f4583c8aa8845cea770d8");
+      navigate("/chat");
     } catch (err) {
       setError("Invalid credentials. Please try again.");
     }
