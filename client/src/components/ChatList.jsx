@@ -16,13 +16,25 @@ const ChatList = ({ onSelectChat }) => {
   const { user_id } = useParams();
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchUsersAndMessages = async () => {
       try {
-        const { data } = await getUserList(currentUser.id);
-        setUsers(data);
+        const { data: userList } = await getUserList(currentUser.id);
+        setUsers(userList);
 
+        // Fetch messages for all users to prepopulate last message info
+        const messagesMap = {};
+        for (const user of userList) {
+          const { data: userMessages } = await getMessages(
+            currentUser.id,
+            user._id
+          );
+          messagesMap[user._id] = userMessages;
+        }
+        setMessages((prev) => ({ ...prev, ...messagesMap }));
+
+        // Select a user if `user_id` is in the URL
         if (user_id) {
-          const existingUser = data.find((user) => user._id === user_id);
+          const existingUser = userList.find((user) => user._id === user_id);
 
           if (existingUser) {
             setSelectedUser(existingUser);
@@ -42,12 +54,12 @@ const ChatList = ({ onSelectChat }) => {
           }
         }
       } catch (error) {
-        console.error("Error fetching users or single user:", error);
+        console.error("Error fetching users or messages:", error);
       }
     };
 
-    fetchUsers();
-  }, [currentUser, user_id, onSelectChat, setSelectedUser]);
+    fetchUsersAndMessages();
+  }, [currentUser, user_id, onSelectChat, setSelectedUser, setMessages]);
 
   const handleUserClick = async (user) => {
     setSelectedUser(user);
