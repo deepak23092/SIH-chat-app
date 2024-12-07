@@ -5,13 +5,14 @@ import { getMessages } from "../services/api";
 import { FiArrowLeft } from "react-icons/fi";
 import { useParams } from "react-router-dom";
 
-// Sample Product JSON
-const demoProducts = {
-  1: { name: "Tomatoes", price: 50, quantity: "10 kg", farmerId: "123" },
-  2: { name: "Potatoes", price: 30, quantity: "20 kg", farmerId: "124" },
-};
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { app } from "../firebase";
 
 const ChatWindow = ({ onBack }) => {
+  const firestore = getFirestore(app);
+
+  const { product_id } = useParams();
+
   const {
     currentUser,
     selectedUser,
@@ -20,8 +21,6 @@ const ChatWindow = ({ onBack }) => {
     setMessages,
     socket,
   } = useContext(ChatContext);
-
-  const { product_id } = useParams();
 
   const [newMessage, setNewMessage] = useState("");
   const [offer, setOffer] = useState("");
@@ -32,11 +31,25 @@ const ChatWindow = ({ onBack }) => {
   const [product, setProduct] = useState(null);
 
   useEffect(() => {
-    // Fetch product details from demo JSON
-    if (product_id) {
-      setProduct(demoProducts[product_id]);
-    }
-  }, [product_id]);
+    const fetchProduct = async () => {
+      if (product_id) {
+        try {
+          const ref = doc(firestore, "products", product_id);
+          const snap = await getDoc(ref);
+
+          if (snap.exists()) {
+            setProduct(snap.data());
+          } else {
+            console.error("No product found with the given ID.");
+          }
+        } catch (error) {
+          console.error("Error fetching product details:", error);
+        }
+      }
+    };
+
+    fetchProduct();
+  }, [product_id, firestore]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -145,8 +158,12 @@ const ChatWindow = ({ onBack }) => {
           {product ? (
             <div className="p-4 bg-white shadow">
               <h3 className="font-bold text-lg">{product.name}</h3>
-              <p>Price: ₹{product.price} per kg</p>
-              <p>Quantity: {product.quantity}</p>
+              <p>
+                Price: ₹{product.price} per {product.quantityName}
+              </p>
+              <p>
+                Quantity: {product.quantity} {product.quantityName}
+              </p>
             </div>
           ) : (
             <div className="p-4 bg-white shadow">
@@ -248,38 +265,38 @@ const ChatWindow = ({ onBack }) => {
                 {presetPrices.map((price, index) => (
                   <button
                     key={index}
-                    className={`px-4 py-2 rounded border ${
-                      offer === price.toString() ? "bg-gray-200" : "bg-white"
+                    className={`px-4 py-2 rounded ${
+                      price === parseInt(offer, 10)
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-black"
                     }`}
                     onClick={() => setOffer(price.toString())}
                   >
-                    ₹ {price.toLocaleString()}
+                    ₹{price}
                   </button>
                 ))}
               </div>
               <div className="flex items-center gap-2">
                 <input
-                  type="text"
+                  type="number"
                   className="flex-1 p-2 border rounded text-sm"
-                  placeholder="Enter your offer"
+                  placeholder="Enter your offer price"
                   value={offer}
                   onChange={(e) => setOffer(e.target.value)}
                 />
                 <button
-                  className="px-2 sm:px-4 py-2 bg-blue-500 text-white rounded text-sm"
+                  className="px-2 sm:px-4 py-2 bg-green-500 text-white rounded text-sm"
                   onClick={handleMakeOffer}
                 >
-                  Send
+                  Send Offer
                 </button>
               </div>
             </div>
           )}
         </>
       ) : (
-        <div className="flex-grow flex items-center justify-center text-center p-4">
-          <p className="text-sm sm:text-base">
-            Select a user to start chatting.
-          </p>
+        <div className="h-full flex justify-center items-center">
+          <p>Select a user to start chatting.</p>
         </div>
       )}
     </div>

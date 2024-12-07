@@ -6,10 +6,9 @@ export const ChatContext = createContext();
 export const ChatProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [messages, setMessages] = useState({}); // Object to store messages for each user
+  const [messages, setMessages] = useState({});
   const [socket, setSocket] = useState(null);
 
-  // Load user details from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
     if (storedUser) {
@@ -17,7 +16,6 @@ export const ChatProvider = ({ children }) => {
     }
   }, []);
 
-  // Initialize and manage socket connection
   useEffect(() => {
     if (currentUser) {
       const newSocket = io("http://localhost:5000", {
@@ -27,7 +25,6 @@ export const ChatProvider = ({ children }) => {
 
       setSocket(newSocket);
 
-      // Handle incoming messages
       newSocket.on("receive-message", (message) => {
         setMessages((prev) => ({
           ...prev,

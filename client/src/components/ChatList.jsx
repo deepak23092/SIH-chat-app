@@ -64,7 +64,7 @@ const ChatList = ({ onSelectChat }) => {
   const handleUserClick = async (user) => {
     setSelectedUser(user);
     onSelectChat(user);
-    navigate(`/chat/1/${user._id}`);
+    navigate(`/chat/1mPRX1JgejlEYDsiEL93/${user._id}`);
 
     if (!messages[user._id]) {
       try {
