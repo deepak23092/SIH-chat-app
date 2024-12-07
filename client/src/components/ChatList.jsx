@@ -7,7 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Image from "../assets/images/levi.jpg";
 
 const ChatList = ({ onSelectChat }) => {
-  const { currentUser, selectedUser, setSelectedUser, messages, setMessages } =
+  const { currentUser, selectedUser, setSelectedUser, messages, setMessages, onlineUsers} =
     useContext(ChatContext);
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -131,6 +131,7 @@ const ChatList = ({ onSelectChat }) => {
       <div className="overflow-y-auto flex-grow bg-white">
         {sortedUsers.map((user) => {
           const lastMessage = getLastMessage(user._id);
+          const isOnline = onlineUsers.includes(user._id);
           return (
             <div
               key={user._id}
@@ -146,7 +147,7 @@ const ChatList = ({ onSelectChat }) => {
                   className="w-10 h-10 rounded-full mr-3"
                 />
                 <div>
-                  <p className="font-medium">{user.name}</p>
+                  <p className="font-medium">{user.name} {isOnline && <span className="text-green-500 text-xs pl-3">online</span>}</p>
                   <p className="text-sm text-gray-500 truncate">
                     {lastMessage
                       ? `${lastMessage.content.substring(0, 20)}...`
