@@ -19,6 +19,7 @@ const ChatWindow = ({ onBack }) => {
     setSelectedUser,
     messages,
     setMessages,
+    typingUsers,
     socket,
   } = useContext(ChatContext);
 
@@ -87,7 +88,7 @@ const ChatWindow = ({ onBack }) => {
   useEffect(() => {
     // Scroll to the bottom of the chat messages whenever they are updated
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages[selectedUser?._id]]);
+  }, [messages[selectedUser?._id] , typingUsers[selectedUser?._id]]);
 
   const handleSend = async () => {
     if (newMessage.trim()) {
@@ -107,6 +108,7 @@ const ChatWindow = ({ onBack }) => {
           { ...messageData, sender: currentUser.id, _id: Math.random() },
         ],
       }));
+      socket.emit("stop-typing", { senderId: currentUser.id, receiverId: selectedUser._id });
       setNewMessage("");
     }
   };
@@ -131,6 +133,36 @@ const ChatWindow = ({ onBack }) => {
         ],
       }));
       setOffer("");
+    }
+  };
+
+  const typingTimeoutRef = useRef(null);
+
+  const handleTyping = (e) => {
+    const { value } = e.target;
+    setNewMessage(value);
+  
+    if (value.trim()) {
+      // Emit 'typing' event when there’s a non-empty message
+      socket.emit("typing", { senderId: currentUser.id, receiverId: selectedUser._id });
+  
+      // Clear any existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+  
+      // Set a new timeout to emit 'stop-typing' after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit("stop-typing", { senderId: currentUser.id, receiverId: selectedUser._id });
+      }, 2000); // Adjust delay as needed
+    } else {
+      // Emit 'stop-typing' event immediately if input is cleared
+      socket.emit("stop-typing", { senderId: currentUser.id, receiverId: selectedUser._id });
+  
+      // Clear the timeout if user deletes the input
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     }
   };
 
@@ -198,6 +230,13 @@ const ChatWindow = ({ onBack }) => {
                 </div>
               </div>
             ))}
+            {typingUsers[selectedUser?._id] && (
+    <div className="p-2 my-2 flex justify-start">
+      <div className="inline-block px-4 py-2 rounded-lg text-sm font-bold bg-gray-300 text-green-500">
+        Typing...
+      </div>
+    </div>
+  )}
             <div ref={messagesEndRef}></div>
           </div>
 
@@ -249,7 +288,7 @@ const ChatWindow = ({ onBack }) => {
                   className="flex-1 p-2 border rounded text-sm"
                   placeholder="Type a message"
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={handleTyping}
                 />
                 <button
                   className="px-2 sm:px-4 py-2 bg-blue-500 text-white rounded text-sm"
