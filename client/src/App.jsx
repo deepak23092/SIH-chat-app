@@ -5,45 +5,70 @@ import {
   useParams,
   useNavigate,
 } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ChatList from "./components/ChatList";
 import ChatWindow from "./components/ChatWindow";
 import { ChatProvider } from "./context/ChatContext";
 
+// ChatPage Component
 const ChatPage = () => {
   const navigate = useNavigate();
-
-  const { product_id, user_id } = useParams();
+  const { seller_id, buyer_id, product_id } = useParams(); // Extract route params
   const [selectedChat, setSelectedChat] = useState(null);
 
-  const isMobile = window.innerWidth <= 768;
+  // Detect mobile view
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Update on window resize
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Back navigation for mobile
+  const handleBack = () => {
+    setSelectedChat(null);
+    navigate("/chat"); // Go back to ChatList
+  };
 
   return (
     <div className="flex">
       {isMobile ? (
-        selectedChat || user_id ? (
+        selectedChat || buyer_id ? (
+          // Mobile: Show ChatWindow when a chat is selected
           <ChatWindow
-            chatId={user_id}
-            onBack={() => {
-              setSelectedChat(null);
-              navigate("/chat");
-            }}
+            sellerId={seller_id}
+            buyerId={buyer_id}
+            productId={product_id}
+            onBack={handleBack}
           />
         ) : (
-          <ChatList onSelectChat={setSelectedChat} />
+          // Mobile: Show ChatList if no chat is selected
+          <ChatList onSelectChat={(chatId) => setSelectedChat(chatId)} />
         )
       ) : (
+        // Desktop: Show both ChatList and ChatWindow
         <>
-          <ChatList onSelectChat={setSelectedChat} />
-          {user_id && <ChatWindow chatId={user_id} />}
+          <ChatList onSelectChat={(chatId) => setSelectedChat(chatId)} />
+          {buyer_id || selectedChat ? (
+            <ChatWindow
+              sellerId={seller_id}
+              buyerId={buyer_id || selectedChat}
+              productId={product_id}
+            />
+          ) : (
+            <div className="flex-1 text-center">Select a chat to view</div>
+          )}
         </>
       )}
     </div>
   );
 };
 
+// App Component
 const App = () => {
   return (
     <ChatProvider>
@@ -51,8 +76,10 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          {/* General Chat route */}
           <Route path="/chat" element={<ChatPage />} />
-          <Route path="/chat/:product_id/:user_id" element={<ChatPage />} />
+          {/* Chat route with dynamic params */}
+          <Route path="/chat/:seller_id/:buyer_id/:product_id" element={<ChatPage />} />
         </Routes>
       </Router>
     </ChatProvider>

@@ -54,11 +54,11 @@ const ChatList = ({ onSelectChat }) => {
           }
         }
       } catch (error) {
-        console.error("Error fetching users or messages:", error);
+        console.error("Error fetching users or messages:", error);        //issue************
       }
     };
 
-    fetchUsersAndMessages();
+    fetchUsersAndMessages();   //issue**************
   }, [currentUser, user_id, onSelectChat, setSelectedUser, setMessages]);
 
   const handleUserClick = async (user) => {

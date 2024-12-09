@@ -8,92 +8,111 @@ import { useParams } from "react-router-dom";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { app } from "../firebase";
 
-const ChatWindow = ({ onBack }) => {
+const ChatWindow = ({ sellerId, buyerId, productId, onBack }) => {
   const firestore = getFirestore(app);
 
-  const { product_id } = useParams();
-
+console.log("BuyerId: ", buyerId);
+console.log("SellerId: ", sellerId);
+console.log("ProductId: ", productId);
   const {
-    currentUser,
-    selectedUser,
-    setSelectedUser,
     messages,
     setMessages,
     socket,
   } = useContext(ChatContext);
+
+  const [buyer, setBuyer] = useState(null);
+  const [seller, setSeller] = useState(null);
+  const [product, setProduct] = useState(null);
 
   const [newMessage, setNewMessage] = useState("");
   const [offer, setOffer] = useState("");
   const [activeTab, setActiveTab] = useState("CHAT");
   const presetPrices = [9500, 9000, 8500, 8000, 7600];
   const messagesEndRef = useRef(null);
-
-  const [product, setProduct] = useState(null);
-
-  useEffect(() => {
-    const fetchProduct = async () => {
-      if (product_id) {
+  
+  // Function to fetch data for buyer, seller, and product
+  const fetchData = async () => {
+    try {
+      // Fetch buyer data
+      console.log("talking")
+      console.log(buyerId)
+      if (buyerId) {
         try {
-          const ref = doc(firestore, "products", product_id);
-          const snap = await getDoc(ref);
-
-          if (snap.exists()) {
-            setProduct(snap.data());
-          } else {
-            console.error("No product found with the given ID.");
-          }
-        } catch (error) {
-          console.error("Error fetching product details:", error);
+          const buyerRef = doc(firestore, "users", buyerId);
+const buyerSnap = await getDoc(buyerRef);
+console.log("buyerSnap:", buyerSnap);
+if (buyerSnap.exists()) setBuyer(buyerSnap.data());
+else console.error("Buyer not found");
+        } catch (e) {
+          console.log(e)
         }
       }
-    };
 
-    fetchProduct();
-  }, [product_id, firestore]);
-
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (selectedUser) {
-        try {
-          const { data } = await getMessages(currentUser.id, selectedUser._id);
-
-          // Add fetched messages to the context under the selected user's ID
-          setMessages((prev) => ({
-            ...prev,
-            [selectedUser._id]: data,
-          }));
-        } catch (error) {
-          console.error("Error fetching messages:", error);
-        }
+      // Fetch seller data
+      if (sellerId) {
+        const sellerRef = doc(firestore, "users", sellerId);
+        const sellerSnap = await getDoc(sellerRef);
+        if (sellerSnap.exists()) setSeller(sellerSnap.data());
+        else console.error("Seller not found");
       }
-    };
-    fetchMessages();
 
-    // Listen for incoming messages from the selected user
-    socket.on("receive-message", (message) => {
-      if (message.senderId === selectedUser._id) {
+      // Fetch product data
+      if (productId) {
+        const productRef = doc(firestore, "products", productId);
+        const productSnap = await getDoc(productRef);
+        if (productSnap.exists()) setProduct(productSnap.data());
+        else console.error("Product not found");
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  console.log("Buyer: ", buyer);
+  console.log("Seller: ", seller);
+  console.log("product: ", product);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchData();
+  }, [buyerId, sellerId, productId]);
+
+  // Handle incoming messages
+  useEffect(() => {
+    const handleReceiveMessage = (message) => {
+      if (message.senderId === sellerId) {
         setMessages((prev) => ({
           ...prev,
-          [selectedUser._id]: [...(prev[selectedUser._id] || []), message],
+          [sellerId]: [...(prev[sellerId] || []), message],
         }));
       }
-    });
+    };
+
+    if (socket) {
+      
+      socket.on("receive-message", handleReceiveMessage);
+    }
+
 
     return () => {
-      socket.off("receive-message");
+      if (socket) {
+        
+        socket.off("receive-message", handleReceiveMessage);
+      }
     };
-  }, [selectedUser, setMessages, socket]);
-
+  }, [sellerId, setMessages, socket]);
+                  
+        
   useEffect(() => {
     // Scroll to the bottom of the chat messages whenever they are updated
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages[selectedUser?._id]]);
+  }, [messages[sellerId?._id]]);
 
   const handleSend = async () => {
     if (newMessage.trim()) {
       const messageData = {
-        senderId: currentUser.id,
-        receiverId: selectedUser._id,
+        senderId: buyerId.id,
+        receiverId: sellerId._id,
         content: newMessage,
         timestamp: new Date().toISOString(),
       };
@@ -102,9 +121,9 @@ const ChatWindow = ({ onBack }) => {
 
       setMessages((prev) => ({
         ...prev,
-        [selectedUser._id]: [
-          ...(prev[selectedUser._id] || []),
-          { ...messageData, sender: currentUser.id, _id: Math.random() },
+        [sellerId._id]: [
+          ...(prev[sellerId._id] || []),
+          { ...messageData, sender: buyerId.id, _id: Math.random() },
         ],
       }));
       setNewMessage("");
@@ -115,8 +134,8 @@ const ChatWindow = ({ onBack }) => {
     if (offer.trim()) {
       const offerMessage = `Offer: ₹${offer}`;
       const messageData = {
-        senderId: currentUser.id,
-        receiverId: selectedUser._id,
+        senderId: buyerId.id,
+        receiverId: sellerId._id,
         content: offerMessage,
         timestamp: new Date().toISOString(),
       };
@@ -125,33 +144,32 @@ const ChatWindow = ({ onBack }) => {
 
       setMessages((prev) => ({
         ...prev,
-        [selectedUser._id]: [
-          ...(prev[selectedUser._id] || []),
-          { ...messageData, sender: currentUser.id, _id: Math.random() },
+        [sellerId._id]: [
+          ...(prev[sellerId._id] || []),
+          { ...messageData, sender: buyerId.id, _id: Math.random() },
         ],
       }));
       setOffer("");
     }
   };
 
-  const userMessages = messages[selectedUser?._id] || [];
+  const userMessages = messages[sellerId?._id] || [];
 
   return (
     <div className="w-full h-screen flex flex-col">
-      {selectedUser ? (
+      {sellerId ? (
         <>
           {/* Header */}
           <h2 className="flex items-center text-lg font-bold p-4 bg-gray-100">
             <button
               onClick={() => {
-                setSelectedUser(null);
                 onBack();
               }}
               className="mr-2 text-gray-600 hover:text-gray-900"
             >
               <FiArrowLeft size={20} />
             </button>
-            Chat with {selectedUser.name}
+            Chat with {seller?.name}
           </h2>
 
           {/* Product Details */}
@@ -179,14 +197,14 @@ const ChatWindow = ({ onBack }) => {
               <div
                 key={msg._id || Math.random()}
                 className={`p-2 my-2 flex ${
-                  msg.senderId === currentUser.id
+                  msg.senderId === buyerId.id
                     ? "justify-end"
                     : "justify-start"
                 }`}
               >
                 <div
                   className={`inline-block px-4 py-2 rounded-lg text-sm max-w-xs md:max-w-md ${
-                    msg.senderId === currentUser.id
+                    msg.senderId === buyerId.id
                       ? "bg-blue-200 text-black"
                       : "bg-gray-300 text-black"
                   }`}

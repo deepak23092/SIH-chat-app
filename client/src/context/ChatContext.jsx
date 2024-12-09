@@ -19,8 +19,11 @@ export const ChatProvider = ({ children }) => {
   useEffect(() => {
     if (currentUser) {
       const newSocket = io("http://localhost:5000", {
-        query: { userId: currentUser.id },
+        auth: { token: currentUser.token },
         transports: ["websocket"],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
       });
 
       setSocket(newSocket);
@@ -34,6 +37,10 @@ export const ChatProvider = ({ children }) => {
 
       newSocket.on("connect_error", (error) => {
         console.error("Socket connection error:", error);
+      });
+
+      newSocket.on("disconnect", () => {
+        console.warn("Socket disconnected.");
       });
 
       return () => {
