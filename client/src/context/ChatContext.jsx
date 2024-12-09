@@ -9,6 +9,7 @@ export const ChatProvider = ({ children }) => {
   const [messages, setMessages] = useState({});
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingUsers, setTypingUsers] = useState([]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -52,6 +53,25 @@ export const ChatProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    if (socket) {
+      // Listen for typing events
+      socket.on("user-typing", ({ senderId }) => {
+        setTypingUsers((prev) => ({ ...prev, [senderId]: true }));
+      });
+  
+      // Listen for stop-typing events
+      socket.on("user-stop-typing", ({ senderId }) => {
+        setTypingUsers((prev) => ({ ...prev, [senderId]: false }));
+      });
+  
+      return () => {
+        socket.off("user-typing");
+        socket.off("user-stop-typing");
+      };
+    }
+  }, [socket]);
+
   return (
     <ChatContext.Provider
       value={{
@@ -63,6 +83,7 @@ export const ChatProvider = ({ children }) => {
         setMessages,
         onlineUsers,
         setOnlineUsers,
+        typingUsers,
         socket,
       }}
     >

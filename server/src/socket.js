@@ -25,6 +25,16 @@ module.exports = (io) => {
       console.log(`User ${userId} joined room ${roomId}`);
     });
 
+     // Handle "typing" event
+     socket.on("typing", ({ senderId, receiverId }) => {
+      io.to(receiverId).emit("user-typing", { senderId });
+    });
+
+    // Handle "stop-typing" event
+    socket.on("stop-typing", ({ senderId, receiverId }) => {
+      io.to(receiverId).emit("user-stop-typing", { senderId });
+    });
+
     // Handle sending messages
     socket.on("send-message", async ({ senderId, receiverId, content }) => {
       try {
