@@ -2,10 +2,19 @@ const Conversation = require("./models/Conversation");
 const User = require("./models/User");
 const { translateText } = require("./config/translation");
 
+const onlineUsers = {};
+
 module.exports = (io) => {
   io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId;
     console.log(`User ${userId} connected with socket ID: ${socket.id}`);
+
+     // Listen for 'user-connected' event from the client
+     socket.on('user-connected', (userId) => {
+      onlineUsers[userId] = socket.id; // Map userId to socket ID
+      console.log(`${userId} is now online.`);
+      io.emit('update-online-users', Object.keys(onlineUsers)); // Broadcast online users
+     });
 
     // Join a room for the connected user
     socket.join(userId);
@@ -89,6 +98,13 @@ module.exports = (io) => {
     // Handle disconnection
     socket.on("disconnect", () => {
       console.log(`User ${userId} disconnected. Socket ID: ${socket.id}`);
+      const disconnectedUser = Object.keys(onlineUsers).find(
+        (key) => onlineUsers[key] === socket.id
+      );
+      if (disconnectedUser) {
+        console.log(`${disconnectedUser} is now offline.`);
+        io.emit('update-online-users', Object.keys(onlineUsers)); // Broadcast online users
+    }
     });
   });
 };

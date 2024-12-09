@@ -8,6 +8,7 @@ export const ChatProvider = ({ children }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState({});
   const [socket, setSocket] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userDetails");
@@ -36,6 +37,14 @@ export const ChatProvider = ({ children }) => {
         console.error("Socket connection error:", error);
       });
 
+      const currentUserId = currentUser.id; // Replace with the logged-in user's ID
+      newSocket.emit('user-connected', currentUserId);
+
+      // Listen for online users update
+      newSocket.on('update-online-users', (users) => {
+          setOnlineUsers(users);
+      });
+
       return () => {
         newSocket.disconnect();
         setSocket(null);
@@ -52,6 +61,8 @@ export const ChatProvider = ({ children }) => {
         setSelectedUser,
         messages,
         setMessages,
+        onlineUsers,
+        setOnlineUsers,
         socket,
       }}
     >
