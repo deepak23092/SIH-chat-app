@@ -1,22 +1,43 @@
 const Conversation = require("../models/Conversation");
+const db = require("../firebase"); // Firestore database instance
+const { doc, getDoc, collection } = require("firebase/firestore");
 
-// Fetch user list
 exports.getUsers = async (req, res) => {
   try {
     const { userId } = req.params;
 
     // Find all chats involving the logged-in user
-    const chats = await Conversation.find({ participants: userId }).populate(
-      "participants",
-      "name role language"
-    );
+    const chats = await Conversation.find({ participants: userId });
 
-    // Filter out the logged-in user from participants
-    const users = chats.map((chat) =>
-      chat.participants.find((participant) => participant.id !== userId)
-    );
+    // Process each chat to get other participants and productId
+    const userPromises = chats.map(async (chat) => {
+      const otherParticipantId = chat.participants.find(
+        (participant) => participant !== userId
+      );
 
-    res.status(200).json(users);
+      if (otherParticipantId) {
+        // Fetch user details from Firestore
+        const userDocRef = doc(collection(db, "users"), otherParticipantId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const { imageUrl, name } = userDoc.data();
+          return {
+            _id: otherParticipantId,
+            image: imageUrl || null,
+            name: name || "Unknown",
+            productId: chat.productId || null, // Extract productId from the chat
+          };
+        }
+      }
+      return null;
+    });
+
+    // Resolve all user details and filter out any null values
+    const userList = (await Promise.all(userPromises)).filter((user) => user);
+
+    // Send response
+    res.status(200).json(userList);
   } catch (error) {
     console.error("Error fetching chat users:", error);
     res.status(500).json({ error: "Failed to fetch chat users" });

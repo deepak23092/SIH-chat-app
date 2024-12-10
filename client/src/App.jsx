@@ -30,10 +30,10 @@ const ChatPage = () => {
   }, []);
 
   // Back navigation for mobile
-  const handleBack = () => {
-    setSelectedChat(null);
-    navigate("/chat"); // Go back to ChatList
-  };
+  // const handleBack = () => {
+  //   setSelectedChat(null);
+  //   navigate("/chat"); // Go back to ChatList
+  // };
 
   return (
     <div className="flex">
@@ -44,7 +44,7 @@ const ChatPage = () => {
             senderId={senderId}
             receiverId={receiverId}
             productId={productId}
-            onBack={handleBack}
+            onSelectChat={(chatId) => setSelectedChat(chatId)}
           />
         ) : (
           // Mobile: Show ChatList if no chat is selected
@@ -59,6 +59,7 @@ const ChatPage = () => {
               senderId={senderId}
               receiverId={receiverId || selectedChat}
               productId={productId}
+              onSelectChat={(chatId) => setSelectedChat(chatId)}
             />
           ) : (
             <div className="flex-1 text-center">Select a chat to view</div>
@@ -77,7 +78,14 @@ const App = () => {
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         {/* General Chat route */}
-        <Route path="/chat" element={<ChatPage />} />
+        <Route
+          path="/chat/:user_id"
+          element={
+            <ChatProvider>
+              <ChatPage />
+            </ChatProvider>
+          }
+        />
         {/* Chat route with dynamic params */}
 
         <Route

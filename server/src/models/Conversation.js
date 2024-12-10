@@ -11,6 +11,7 @@ const chatSchema = new mongoose.Schema({
       timestamp: { type: Date, default: Date.now },
     },
   ],
+  productId: String,
 });
 
 const Chat = mongoose.model("Chat", chatSchema);

@@ -4,9 +4,11 @@ import { ChatContext } from "../context/ChatContext";
 import { getMessages } from "../services/api";
 import { FiArrowLeft } from "react-icons/fi";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+
 import { app } from "../firebase";
 
-const ChatWindow = ({ senderId, receiverId, productId, onBack }) => {
+const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
   const firestore = getFirestore(app);
   const { messages, setMessages, socket } = useContext(ChatContext);
 
@@ -19,6 +21,7 @@ const ChatWindow = ({ senderId, receiverId, productId, onBack }) => {
   const [activeTab, setActiveTab] = useState("CHAT");
   const presetPrices = [9500, 9000, 8500, 8000, 7600];
   const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -117,21 +120,15 @@ const ChatWindow = ({ senderId, receiverId, productId, onBack }) => {
     if (offer.trim()) {
       const offerMessage = `Offer: ₹${offer}`;
       const messageData = {
-        senderId: receiverId,
-        receiverId: senderId,
+        senderId: senderId,
+        receiverId: receiverId,
         content: offerMessage,
         timestamp: new Date().toISOString(),
       };
 
       socket.emit("send-message", messageData);
 
-      setMessages((prev) => ({
-        ...prev,
-        [senderId]: [
-          ...(prev[senderId] || []),
-          { ...messageData, sender: receiverId.id, _id: Math.random() },
-        ],
-      }));
+      setMessages((prev) => [...prev, messageData]);
       setOffer("");
     }
   };
@@ -144,13 +141,14 @@ const ChatWindow = ({ senderId, receiverId, productId, onBack }) => {
           <h2 className="flex items-center text-lg font-bold p-4 bg-gray-100">
             <button
               onClick={() => {
-                onBack();
+                navigate(`/chat/${senderId}`);
+                onSelectChat(null);
               }}
               className="mr-2 text-gray-600 hover:text-gray-900"
             >
               <FiArrowLeft size={20} />
             </button>
-            Chat with {sender?.name}
+            Chat with {receiver?.name}
           </h2>
 
           {/* Product Details */}

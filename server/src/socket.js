@@ -58,6 +58,7 @@ module.exports = (io) => {
             chat = new Conversation({
               participants: [senderId, receiverId],
               messages: [],
+              productId,
             });
           }
 
