@@ -19,7 +19,6 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
   const [newMessage, setNewMessage] = useState("");
   const [offer, setOffer] = useState("");
   const [activeTab, setActiveTab] = useState("CHAT");
-  const presetPrices = [9500, 9000, 8500, 8000, 7600];
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -28,12 +27,7 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
       if (receiverId) {
         try {
           const { data } = await getMessages(senderId, receiverId);
-          console.log(data);
-          setMessages((prev) => [
-            // ...prev,
-            // [receiverId]: data,
-            ...data,
-          ]);
+          setMessages((prev) => [...data]);
         } catch (error) {
           console.error("Error fetching messages:", error);
         }
@@ -75,10 +69,7 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
         message.receiverId === receiverId ||
         message.senderId === receiverId
       ) {
-        setMessages((prev) => ({
-          ...prev,
-          [receiverId]: [...(prev[receiverId] || []), message],
-        }));
+        setMessages((prev) => [...prev, message]);
       }
     };
 
@@ -95,7 +86,7 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages[receiverId]]);
+  }, [messages]);
 
   const handleSend = async () => {
     if (newMessage.trim()) {
@@ -114,8 +105,6 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
     }
   };
 
-  // const currentMessages = messages[receiverId] || [];
-
   const handleMakeOffer = () => {
     if (offer.trim()) {
       const offerMessage = `Offer: ₹${offer}`;
@@ -132,6 +121,13 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
       setOffer("");
     }
   };
+
+  const calculatePresetPrices = (price) => {
+    if (!price) return [];
+    return [price - 50, price - 100, price - 150, price - 200, price - 250];
+  };
+
+  const presetPrices = product ? calculatePresetPrices(product.price) : [];
 
   return (
     <div className="w-full h-screen flex flex-col">
@@ -156,7 +152,7 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
             <div className="p-4 bg-white shadow">
               <h3 className="font-bold text-lg">{product.name}</h3>
               <p>
-                Price: ₹{product.price} per {product.quantityName}
+                Price: ₹{(product.price / product.quantity) * 100} per 100kg
               </p>
               <p>
                 Quantity: {product.quantity} {product.quantityName}
