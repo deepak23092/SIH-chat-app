@@ -3,25 +3,17 @@ import { format } from "date-fns";
 import { ChatContext } from "../context/ChatContext";
 import { getMessages } from "../services/api";
 import { FiArrowLeft } from "react-icons/fi";
-import { useParams } from "react-router-dom";
 
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { app } from "../firebase";
 
-const ChatWindow = ({ sellerId, buyerId, productId, onBack }) => {
+const ChatWindow = ({ senderId, receiverId, productId, onBack }) => {
   const firestore = getFirestore(app);
 
-console.log("BuyerId: ", buyerId);
-console.log("SellerId: ", sellerId);
-console.log("ProductId: ", productId);
-  const {
-    messages,
-    setMessages,
-    socket,
-  } = useContext(ChatContext);
+  const { messages, setMessages, socket } = useContext(ChatContext);
 
-  const [buyer, setBuyer] = useState(null);
-  const [seller, setSeller] = useState(null);
+  const [receiver, setReceiver] = useState(null);
+  const [sender, setSender] = useState(null);
   const [product, setProduct] = useState(null);
 
   const [newMessage, setNewMessage] = useState("");
@@ -29,30 +21,26 @@ console.log("ProductId: ", productId);
   const [activeTab, setActiveTab] = useState("CHAT");
   const presetPrices = [9500, 9000, 8500, 8000, 7600];
   const messagesEndRef = useRef(null);
-  
-  // Function to fetch data for buyer, seller, and product
+
+  // Function to fetch data for receiver, sender, and product
   const fetchData = async () => {
     try {
-      // Fetch buyer data
-      console.log("talking")
-      console.log(buyerId)
-      if (buyerId) {
+      if (receiverId) {
         try {
-          const buyerRef = doc(firestore, "users", buyerId);
-const buyerSnap = await getDoc(buyerRef);
-console.log("buyerSnap:", buyerSnap);
-if (buyerSnap.exists()) setBuyer(buyerSnap.data());
-else console.error("Buyer not found");
+          const receiverRef = doc(firestore, "users", receiverId);
+          const receiverSnap = await getDoc(receiverRef);
+          if (receiverSnap.exists()) setReceiver(receiverSnap.data());
+          else console.error("Buyer not found");
         } catch (e) {
-          console.log(e)
+          console.log(e);
         }
       }
 
-      // Fetch seller data
-      if (sellerId) {
-        const sellerRef = doc(firestore, "users", sellerId);
-        const sellerSnap = await getDoc(sellerRef);
-        if (sellerSnap.exists()) setSeller(sellerSnap.data());
+      // Fetch sender data
+      if (senderId) {
+        const senderRef = doc(firestore, "users", senderId);
+        const senderSnap = await getDoc(senderRef);
+        if (senderSnap.exists()) setSender(senderSnap.data());
         else console.error("Seller not found");
       }
 
@@ -68,64 +56,55 @@ else console.error("Buyer not found");
     }
   };
 
-  console.log("Buyer: ", buyer);
-  console.log("Seller: ", seller);
-  console.log("product: ", product);
-
   // Fetch data on component mount
   useEffect(() => {
     fetchData();
-  }, [buyerId, sellerId, productId]);
+  }, [receiverId, senderId, productId]);
 
   // Handle incoming messages
   useEffect(() => {
     const handleReceiveMessage = (message) => {
-      if (message.senderId === sellerId) {
+      if (message.senderId === senderId) {
         setMessages((prev) => ({
           ...prev,
-          [sellerId]: [...(prev[sellerId] || []), message],
+          [senderId]: [...(prev[senderId] || []), message],
         }));
       }
     };
 
     if (socket) {
-      
       socket.on("receive-message", handleReceiveMessage);
     }
 
-
     return () => {
       if (socket) {
-        
         socket.off("receive-message", handleReceiveMessage);
       }
     };
-  }, [sellerId, setMessages, socket]);
-                  
-        
+  }, [senderId, setMessages, socket]);
+
   useEffect(() => {
     // Scroll to the bottom of the chat messages whenever they are updated
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages[sellerId?._id]]);
+  }, [messages[senderId?._id]]);
 
   const handleSend = async () => {
     if (newMessage.trim()) {
       const messageData = {
-        senderId: buyerId.id,
-        receiverId: sellerId._id,
+        senderId: senderId,
+        receiverId: receiverId,
+        productId,
         content: newMessage,
         timestamp: new Date().toISOString(),
       };
 
       socket.emit("send-message", messageData);
 
-      setMessages((prev) => ({
+      setMessages((prev) => [
         ...prev,
-        [sellerId._id]: [
-          ...(prev[sellerId._id] || []),
-          { ...messageData, sender: buyerId.id, _id: Math.random() },
-        ],
-      }));
+
+        { ...messageData, sender: receiverId.id, _id: Math.random() },
+      ]);
       setNewMessage("");
     }
   };
@@ -134,8 +113,8 @@ else console.error("Buyer not found");
     if (offer.trim()) {
       const offerMessage = `Offer: ₹${offer}`;
       const messageData = {
-        senderId: buyerId.id,
-        receiverId: sellerId._id,
+        senderId: receiverId,
+        receiverId: senderId,
         content: offerMessage,
         timestamp: new Date().toISOString(),
       };
@@ -144,20 +123,20 @@ else console.error("Buyer not found");
 
       setMessages((prev) => ({
         ...prev,
-        [sellerId._id]: [
-          ...(prev[sellerId._id] || []),
-          { ...messageData, sender: buyerId.id, _id: Math.random() },
+        [senderId]: [
+          ...(prev[senderId] || []),
+          { ...messageData, sender: receiverId.id, _id: Math.random() },
         ],
       }));
       setOffer("");
     }
   };
 
-  const userMessages = messages[sellerId?._id] || [];
+  const userMessages = messages[receiverId] || [];
 
   return (
     <div className="w-full h-screen flex flex-col">
-      {sellerId ? (
+      {senderId ? (
         <>
           {/* Header */}
           <h2 className="flex items-center text-lg font-bold p-4 bg-gray-100">
@@ -169,7 +148,7 @@ else console.error("Buyer not found");
             >
               <FiArrowLeft size={20} />
             </button>
-            Chat with {seller?.name}
+            Chat with {sender?.name}
           </h2>
 
           {/* Product Details */}
@@ -193,18 +172,16 @@ else console.error("Buyer not found");
 
           {/* Messages */}
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
-            {userMessages.map((msg) => (
+            {messages.map((msg) => (
               <div
                 key={msg._id || Math.random()}
                 className={`p-2 my-2 flex ${
-                  msg.senderId === buyerId.id
-                    ? "justify-end"
-                    : "justify-start"
+                  msg.senderId === senderId ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
                   className={`inline-block px-4 py-2 rounded-lg text-sm max-w-xs md:max-w-md ${
-                    msg.senderId === buyerId.id
+                    msg.senderId === senderId
                       ? "bg-blue-200 text-black"
                       : "bg-gray-300 text-black"
                   }`}

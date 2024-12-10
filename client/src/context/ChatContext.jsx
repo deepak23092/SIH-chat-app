@@ -1,38 +1,30 @@
 import { io } from "socket.io-client";
 import React, { createContext, useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 
 export const ChatContext = createContext();
 
 export const ChatProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [messages, setMessages] = useState({});
+  const [messages, setMessages] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("userDetails");
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-  }, []);
+  const { productId } = useParams();
 
   useEffect(() => {
-    if (currentUser) {
+    if (productId) {
       const newSocket = io("http://localhost:5000", {
-        auth: { token: currentUser.token },
         transports: ["websocket"],
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 2000,
+        query: { userId: productId },
       });
 
       setSocket(newSocket);
 
-      newSocket.on("receive-message", (message) => {
-        setMessages((prev) => ({
-          ...prev,
-          [message.senderId]: [...(prev[message.senderId] || []), message],
-        }));
+      newSocket.on("receive-message", (messages) => {
+        setMessages(messages);
       });
 
       newSocket.on("connect_error", (error) => {
@@ -48,13 +40,11 @@ export const ChatProvider = ({ children }) => {
         setSocket(null);
       };
     }
-  }, [currentUser]);
+  }, [productId]);
 
   return (
     <ChatContext.Provider
       value={{
-        currentUser,
-        setCurrentUser,
         selectedUser,
         setSelectedUser,
         messages,

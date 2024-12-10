@@ -11,11 +11,12 @@ import Signup from "./pages/Signup";
 import ChatList from "./components/ChatList";
 import ChatWindow from "./components/ChatWindow";
 import { ChatProvider } from "./context/ChatContext";
+import React from "react";
 
 // ChatPage Component
 const ChatPage = () => {
   const navigate = useNavigate();
-  const { seller_id, buyer_id, product_id } = useParams(); // Extract route params
+  const { senderId, receiverId, productId } = useParams();
   const [selectedChat, setSelectedChat] = useState(null);
 
   // Detect mobile view
@@ -37,12 +38,12 @@ const ChatPage = () => {
   return (
     <div className="flex">
       {isMobile ? (
-        selectedChat || buyer_id ? (
+        selectedChat || receiverId ? (
           // Mobile: Show ChatWindow when a chat is selected
           <ChatWindow
-            sellerId={seller_id}
-            buyerId={buyer_id}
-            productId={product_id}
+            senderId={senderId}
+            receiverId={receiverId}
+            productId={productId}
             onBack={handleBack}
           />
         ) : (
@@ -53,11 +54,11 @@ const ChatPage = () => {
         // Desktop: Show both ChatList and ChatWindow
         <>
           <ChatList onSelectChat={(chatId) => setSelectedChat(chatId)} />
-          {buyer_id || selectedChat ? (
+          {receiverId || selectedChat ? (
             <ChatWindow
-              sellerId={seller_id}
-              buyerId={buyer_id || selectedChat}
-              productId={product_id}
+              senderId={senderId}
+              receiverId={receiverId || selectedChat}
+              productId={productId}
             />
           ) : (
             <div className="flex-1 text-center">Select a chat to view</div>
@@ -71,18 +72,24 @@ const ChatPage = () => {
 // App Component
 const App = () => {
   return (
-    <ChatProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          {/* General Chat route */}
-          <Route path="/chat" element={<ChatPage />} />
-          {/* Chat route with dynamic params */}
-          <Route path="/chat/:seller_id/:buyer_id/:product_id" element={<ChatPage />} />
-        </Routes>
-      </Router>
-    </ChatProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        {/* General Chat route */}
+        <Route path="/chat" element={<ChatPage />} />
+        {/* Chat route with dynamic params */}
+
+        <Route
+          path="/chat/:senderId/:receiverId/:productId"
+          element={
+            <ChatProvider>
+              <ChatPage />
+            </ChatProvider>
+          }
+        />
+      </Routes>
+    </Router>
   );
 };
 
