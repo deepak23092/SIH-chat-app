@@ -23,19 +23,25 @@ export const ChatProvider = ({ children }) => {
 
       setSocket(newSocket);
 
+      // Handle receiving messages
       newSocket.on("receive-message", (messages) => {
-        setMessages(messages);
+        console.log("received messages: ", messages);
+        setMessages((prev) => [...messages]);
       });
 
+      // Handle connection errors
       newSocket.on("connect_error", (error) => {
         console.error("Socket connection error:", error);
       });
 
+      // Handle disconnection
       newSocket.on("disconnect", () => {
         console.warn("Socket disconnected.");
       });
 
+      // Cleanup on component unmount
       return () => {
+        newSocket.off();
         newSocket.disconnect();
         setSocket(null);
       };
