@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = "https://sih-chat-app-rho.vercel.app/api";
 
 export const login = async (credentials) =>
   axios.post(`${BASE_URL}/auth/login`, credentials);
