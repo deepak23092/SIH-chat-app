@@ -6,8 +6,6 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { useState, useEffect } from "react";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import ChatList from "./components/ChatList";
 import ChatWindow from "./components/ChatWindow";
 import { ChatProvider } from "./context/ChatContext";
@@ -15,7 +13,6 @@ import React from "react";
 
 // ChatPage Component
 const ChatPage = () => {
-  const navigate = useNavigate();
   const { senderId, receiverId, productId } = useParams();
   const [selectedChat, setSelectedChat] = useState(null);
 
@@ -28,12 +25,6 @@ const ChatPage = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Back navigation for mobile
-  // const handleBack = () => {
-  //   setSelectedChat(null);
-  //   navigate("/chat"); // Go back to ChatList
-  // };
 
   return (
     <div className="flex">
@@ -75,8 +66,6 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
         {/* General Chat route */}
         <Route
           path="/chat/:user_id"
