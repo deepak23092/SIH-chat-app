@@ -3,112 +3,104 @@ import { format } from "date-fns";
 import { ChatContext } from "../context/ChatContext";
 import { getMessages } from "../services/api";
 import { FiArrowLeft } from "react-icons/fi";
-import { useParams } from "react-router-dom";
-
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+
 import { app } from "../firebase";
 
-const ChatWindow = ({ onBack }) => {
+const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
   const firestore = getFirestore(app);
+  const { messages, setMessages, socket } = useContext(ChatContext);
 
-  const { product_id } = useParams();
-
-  const {
-    currentUser,
-    selectedUser,
-    setSelectedUser,
-    messages,
-    setMessages,
-    typingUsers,
-    socket,
-  } = useContext(ChatContext);
+  const [receiver, setReceiver] = useState(null);
+  const [sender, setSender] = useState(null);
+  const [product, setProduct] = useState(null);
 
   const [newMessage, setNewMessage] = useState("");
   const [offer, setOffer] = useState("");
   const [activeTab, setActiveTab] = useState("CHAT");
-  const presetPrices = [9500, 9000, 8500, 8000, 7600];
   const messagesEndRef = useRef(null);
-
-  const [product, setProduct] = useState(null);
-
-  useEffect(() => {
-    const fetchProduct = async () => {
-      if (product_id) {
-        try {
-          const ref = doc(firestore, "products", product_id);
-          const snap = await getDoc(ref);
-
-          if (snap.exists()) {
-            setProduct(snap.data());
-          } else {
-            console.error("No product found with the given ID.");
-          }
-        } catch (error) {
-          console.error("Error fetching product details:", error);
-        }
-      }
-    };
-
-    fetchProduct();
-  }, [product_id, firestore]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMessages = async () => {
-      if (selectedUser) {
+      if (receiverId) {
         try {
-          const { data } = await getMessages(currentUser.id, selectedUser._id);
-
-          // Add fetched messages to the context under the selected user's ID
-          setMessages((prev) => ({
-            ...prev,
-            [selectedUser._id]: data,
-          }));
+          const { data } = await getMessages(senderId, receiverId);
+          setMessages((prev) => [...data]);
         } catch (error) {
           console.error("Error fetching messages:", error);
         }
       }
     };
     fetchMessages();
-
-    // Listen for incoming messages from the selected user
-    socket.on("receive-message", (message) => {
-      if (message.senderId === selectedUser._id) {
-        setMessages((prev) => ({
-          ...prev,
-          [selectedUser._id]: [...(prev[selectedUser._id] || []), message],
-        }));
-      }
-    });
-
-    return () => {
-      socket.off("receive-message");
-    };
-  }, [selectedUser, setMessages, socket]);
+  }, [receiverId, senderId, setMessages]);
 
   useEffect(() => {
-    // Scroll to the bottom of the chat messages whenever they are updated
+    const fetchData = async () => {
+      try {
+        if (receiverId) {
+          const receiverRef = doc(firestore, "users", receiverId);
+          const receiverSnap = await getDoc(receiverRef);
+          setReceiver(receiverSnap.exists() ? receiverSnap.data() : null);
+        }
+
+        if (senderId) {
+          const senderRef = doc(firestore, "users", senderId);
+          const senderSnap = await getDoc(senderRef);
+          setSender(senderSnap.exists() ? senderSnap.data() : null);
+        }
+
+        if (productId) {
+          const productRef = doc(firestore, "products", productId);
+          const productSnap = await getDoc(productRef);
+          setProduct(productSnap.exists() ? productSnap.data() : null);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    fetchData();
+  }, [receiverId, senderId, productId]);
+
+  useEffect(() => {
+    const handleReceiveMessage = (message) => {
+      if (
+        message.receiverId === receiverId ||
+        message.senderId === receiverId
+      ) {
+        setMessages((prev) => [...prev, message]);
+      }
+    };
+
+    if (socket) {
+      socket.on("receive-message", handleReceiveMessage);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("receive-message", handleReceiveMessage);
+      }
+    };
+  }, [receiverId, setMessages, socket]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages[selectedUser?._id] , typingUsers[selectedUser?._id]]);
+  }, [messages]);
 
   const handleSend = async () => {
     if (newMessage.trim()) {
       const messageData = {
-        senderId: currentUser.id,
-        receiverId: selectedUser._id,
+        senderId,
+        receiverId,
+        productId,
         content: newMessage,
         timestamp: new Date().toISOString(),
       };
 
       socket.emit("send-message", messageData);
 
-      setMessages((prev) => ({
-        ...prev,
-        [selectedUser._id]: [
-          ...(prev[selectedUser._id] || []),
-          { ...messageData, sender: currentUser.id, _id: Math.random() },
-        ],
-      }));
-      socket.emit("stop-typing", { senderId: currentUser.id, receiverId: selectedUser._id });
+      setMessages((prev) => [...prev, messageData]);
       setNewMessage("");
     }
   };
@@ -117,73 +109,43 @@ const ChatWindow = ({ onBack }) => {
     if (offer.trim()) {
       const offerMessage = `Offer: ₹${offer}`;
       const messageData = {
-        senderId: currentUser.id,
-        receiverId: selectedUser._id,
+        senderId: senderId,
+        receiverId: receiverId,
+        productId,
         content: offerMessage,
         timestamp: new Date().toISOString(),
       };
 
       socket.emit("send-message", messageData);
 
-      setMessages((prev) => ({
-        ...prev,
-        [selectedUser._id]: [
-          ...(prev[selectedUser._id] || []),
-          { ...messageData, sender: currentUser.id, _id: Math.random() },
-        ],
-      }));
+      setMessages((prev) => [...prev, messageData]);
       setOffer("");
     }
   };
 
-  const typingTimeoutRef = useRef(null);
-
-  const handleTyping = (e) => {
-    const { value } = e.target;
-    setNewMessage(value);
-  
-    if (value.trim()) {
-      // Emit 'typing' event when there’s a non-empty message
-      socket.emit("typing", { senderId: currentUser.id, receiverId: selectedUser._id });
-  
-      // Clear any existing timeout
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-  
-      // Set a new timeout to emit 'stop-typing' after 2 seconds of inactivity
-      typingTimeoutRef.current = setTimeout(() => {
-        socket.emit("stop-typing", { senderId: currentUser.id, receiverId: selectedUser._id });
-      }, 2000); // Adjust delay as needed
-    } else {
-      // Emit 'stop-typing' event immediately if input is cleared
-      socket.emit("stop-typing", { senderId: currentUser.id, receiverId: selectedUser._id });
-  
-      // Clear the timeout if user deletes the input
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    }
+  const calculatePresetPrices = (price) => {
+    if (!price) return [];
+    return [price - 50, price - 100, price - 150, price - 200, price - 250];
   };
 
-  const userMessages = messages[selectedUser?._id] || [];
+  const presetPrices = product ? calculatePresetPrices(product.price) : [];
 
   return (
     <div className="w-full h-screen flex flex-col">
-      {selectedUser ? (
+      {receiverId ? (
         <>
           {/* Header */}
           <h2 className="flex items-center text-lg font-bold p-4 bg-gray-100">
             <button
               onClick={() => {
-                setSelectedUser(null);
-                onBack();
+                navigate(`/chat/${senderId}`);
+                onSelectChat(null);
               }}
               className="mr-2 text-gray-600 hover:text-gray-900"
             >
               <FiArrowLeft size={20} />
             </button>
-            Chat with {selectedUser.name}
+            Chat with {receiver?.name}
           </h2>
 
           {/* Product Details */}
@@ -191,7 +153,7 @@ const ChatWindow = ({ onBack }) => {
             <div className="p-4 bg-white shadow">
               <h3 className="font-bold text-lg">{product.name}</h3>
               <p>
-                Price: ₹{product.price} per {product.quantityName}
+                Price: ₹{(product.price / product.quantity) * 100} per 100kg
               </p>
               <p>
                 Quantity: {product.quantity} {product.quantityName}
@@ -207,23 +169,25 @@ const ChatWindow = ({ onBack }) => {
 
           {/* Messages */}
           <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
-            {userMessages.map((msg) => (
+            {messages.map((msg) => (
               <div
-                key={msg._id || Math.random()}
+                key={`${msg.timestamp}-${msg.senderId}`}
                 className={`p-2 my-2 flex ${
-                  msg.senderId === currentUser.id
-                    ? "justify-end"
-                    : "justify-start"
+                  msg.senderId === senderId ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
                   className={`inline-block px-4 py-2 rounded-lg text-sm max-w-xs md:max-w-md ${
-                    msg.senderId === currentUser.id
+                    msg.senderId === senderId
                       ? "bg-blue-200 text-black"
                       : "bg-gray-300 text-black"
                   }`}
                 >
-                  <p>{msg.content}</p>
+                  <p>
+                    {msg.senderId !== senderId
+                      ? msg.translatedContent
+                      : msg.content}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {format(new Date(msg.timestamp), "hh:mm a, MMM d")}
                   </p>
@@ -231,12 +195,12 @@ const ChatWindow = ({ onBack }) => {
               </div>
             ))}
             {typingUsers[selectedUser?._id] && (
-    <div className="p-2 my-2 flex justify-start">
-      <div className="inline-block px-4 py-2 rounded-lg text-sm font-bold bg-gray-300 text-green-500">
-        Typing...
-      </div>
-    </div>
-  )}
+              <div className="p-2 my-2 flex justify-start">
+                <div className="inline-block px-4 py-2 rounded-lg text-sm font-bold bg-gray-300 text-green-500">
+                  Typing...
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef}></div>
           </div>
 

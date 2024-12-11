@@ -1,6 +1,7 @@
 const Conversation = require("./models/Conversation");
-const User = require("./models/User");
 const { translateText } = require("./config/translation");
+const db = require("./firebase");
+const { doc, getDoc, collection } = require("firebase/firestore");
 
 const onlineUsers = {};
 
@@ -36,74 +37,84 @@ module.exports = (io) => {
     });
 
     // Handle sending messages
-    socket.on("send-message", async ({ senderId, receiverId, content }) => {
-      try {
-        // Validate required fields
-        if (!senderId || !receiverId || !content) {
-          console.error("Missing required fields in send-message event.");
-          return;
-        }
+    socket.on(
+      "send-message",
+      async ({ senderId, receiverId, productId, content }) => {
+        try {
+          if (!senderId || !receiverId || !content) {
+            console.error("Missing required fields in send-message event.");
+            return;
+          }
 
-        // Fetch sender and receiver language preferences
-        const sender = await User.findById(senderId);
-        const receiver = await User.findById(receiverId);
+          // Fetch user data from Firebase
+          const senderRef = doc(collection(db, "users"), senderId);
+          const senderDoc = await getDoc(senderRef);
 
-        if (!sender || !receiver) {
-          console.error("Sender or receiver not found.");
-          return;
-        }
+          const receiverRef = doc(collection(db, "users"), receiverId);
+          const receiverDoc = await getDoc(receiverRef);
 
-        let translatedContent = content;
+          if (!senderDoc.exists() || !receiverDoc.exists()) {
+            console.error("One or both users not found in Firebase.");
+            return;
+          }
 
-        // Translate message if languages differ
-        if (sender.language !== receiver.language) {
-          console.log(
-            `Translating message from '${sender.language}' to '${receiver.language}'`
-          );
-          translatedContent = await translateText(content, receiver.language);
-          console.log("Translated content:", translatedContent);
-        } else {
-          console.log("No translation needed.");
-        }
+          const senderLan = senderDoc.data().language || "en";
+          const receiverLan = receiverDoc.data().language || "en";
 
-        // Check if a conversation exists between the users
-        let chat = await Conversation.findOne({
-          participants: { $all: [senderId, receiverId] },
-        });
+          let translatedContent = content;
 
-        if (!chat) {
-          // Create a new conversation if none exists
-          chat = new Conversation({
-            participants: [senderId, receiverId],
-            messages: [],
+          // Translate message if needed
+          if (senderLan !== receiverLan) {
+            try {
+              translatedContent = await translateText(content, receiverLan);
+              console.log(
+                `Translated message from '${senderLan}' to '${receiverLan}':`,
+                translatedContent
+              );
+            } catch (translateError) {
+              console.error(
+                "Error translating message:",
+                translateError.message
+              );
+              translatedContent = content; // Fallback to original content
+            }
+          } else {
+            console.log("No translation needed.");
+          }
+
+          // Check if a conversation exists between the users
+          let chat = await Conversation.findOne({
+            participants: { $all: [senderId, receiverId] },
           });
+
+          if (!chat) {
+            chat = new Conversation({
+              participants: [senderId, receiverId],
+              messages: [],
+              productId,
+            });
+          }
+
+          // Add the new message to the conversation
+          const newMessage = {
+            senderId,
+            receiverId,
+            content,
+            translatedContent,
+            createdAt: new Date(),
+          };
+
+          chat.messages.push(newMessage);
+          await chat.save();
+
+          // Emit the message to the receiver's room
+          io.to(productId).emit("receive-message", chat.messages);
+          console.log("Message sent to room:", receiverId);
+        } catch (error) {
+          console.error("Error handling send-message:", error.message);
         }
-
-        // Add the new message to the conversation
-        const newMessage = {
-          senderId,
-          receiverId,
-          content,
-          translatedContent,
-          createdAt: new Date(),
-        };
-
-        chat.messages.push(newMessage);
-        await chat.save();
-
-        // Emit the message to the receiver's room
-        io.to(receiverId).emit("receive-message", {
-          _id: newMessage._id,
-          senderId,
-          receiverId,
-          content: translatedContent,
-          originalContent: content,
-          timestamp: newMessage.createdAt,
-        });
-      } catch (error) {
-        console.error("Error handling send-message:", error.message);
       }
-    });
+    );
 
     // Handle disconnection
     socket.on("disconnect", () => {

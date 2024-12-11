@@ -1,78 +1,54 @@
 import React, { useEffect, useState, useContext } from "react";
 import { ChatContext } from "../context/ChatContext";
-import { getUserList, getMessages, getSingleUser } from "../services/api";
+import { getUserList, getMessages } from "../services/api";
 import { format } from "date-fns";
 import { FiSearch } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import Image from "../assets/images/levi.jpg";
 
 const ChatList = ({ onSelectChat }) => {
-  const { currentUser, selectedUser, setSelectedUser, messages, setMessages, onlineUsers} =
-    useContext(ChatContext);
+  const { messages, setMessages } = useContext(ChatContext);
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [messagesMap, setMessagesMap] = useState({});
+
   const navigate = useNavigate();
-  const { user_id } = useParams();
+  let { user_id, senderId } = useParams();
+
+  user_id = user_id || senderId;
 
   useEffect(() => {
     const fetchUsersAndMessages = async () => {
       try {
-        const { data: userList } = await getUserList(currentUser.id);
+        const { data: userList } = await getUserList(user_id);
         setUsers(userList);
 
         // Fetch messages for all users to prepopulate last message info
         const messagesMap = {};
         for (const user of userList) {
-          const { data: userMessages } = await getMessages(
-            currentUser.id,
-            user._id
-          );
+          const { data: userMessages } = await getMessages(user_id, user._id);
           messagesMap[user._id] = userMessages;
         }
-        setMessages((prev) => ({ ...prev, ...messagesMap }));
+        setMessagesMap(messagesMap);
 
         // Select a user if `user_id` is in the URL
-        if (user_id) {
-          const existingUser = userList.find((user) => user._id === user_id);
-
-          if (existingUser) {
-            setSelectedUser(existingUser);
-            onSelectChat(existingUser);
-          } else {
-            const { data: newUser } = await getSingleUser(user_id);
-            if (newUser) {
-              setUsers((prev) => {
-                const isUserAlreadyPresent = prev.some(
-                  (user) => user._id === newUser._id
-                );
-                return isUserAlreadyPresent ? prev : [...prev, newUser];
-              });
-              setSelectedUser(newUser);
-              onSelectChat(newUser);
-            }
-          }
-        }
       } catch (error) {
-        console.error("Error fetching users or messages:", error);
+        console.error("Error fetching users or messages:", error); //issue************
       }
     };
 
-    fetchUsersAndMessages();
-  }, [currentUser, user_id, onSelectChat, setSelectedUser, setMessages]);
+    fetchUsersAndMessages(); //issue**************
+  }, [user_id, onSelectChat, setMessages]);
 
   const handleUserClick = async (user) => {
-    setSelectedUser(user);
     onSelectChat(user);
-    navigate(`/chat/1mPRX1JgejlEYDsiEL93/${user._id}`);
+    navigate(`/chat/${user_id}/${user._id}/${user.productId}`);
 
-    if (!messages[user._id]) {
+    if (!messagesMap[user._id]) {
       try {
-        const { data } = await getMessages(currentUser.id, user._id);
-        setMessages((prev) => ({
-          ...prev,
-          [user._id]: data,
-        }));
+        const { data } = await getMessages(user_id, user._id);
+        setMessages((prev) => [...data]);
       } catch (error) {
         console.error("Error fetching messages:", error);
       }
@@ -80,7 +56,7 @@ const ChatList = ({ onSelectChat }) => {
   };
 
   const getLastMessage = (userId) => {
-    const userMessages = messages[userId] || [];
+    const userMessages = messagesMap[userId] || [];
     if (userMessages.length > 0) {
       const lastMessage = userMessages[userMessages.length - 1];
       return {
@@ -135,9 +111,7 @@ const ChatList = ({ onSelectChat }) => {
           return (
             <div
               key={user._id}
-              className={`p-4 flex items-center justify-between border-b cursor-pointer hover:bg-gray-100 ${
-                selectedUser?._id === user._id ? "bg-gray-200" : ""
-              }`}
+              className={`p-4 flex items-center justify-between border-b cursor-pointer hover:bg-gray-100 `}
               onClick={() => handleUserClick(user)}
             >
               <div className="flex items-center">
@@ -147,7 +121,14 @@ const ChatList = ({ onSelectChat }) => {
                   className="w-10 h-10 rounded-full mr-3"
                 />
                 <div>
-                  <p className="font-medium">{user.name} {isOnline && <span className="text-green-500 text-xs pl-3">online</span>}</p>
+                  <p className="font-medium">
+                    {user.name}{" "}
+                    {isOnline && (
+                      <span className="text-green-500 text-xs pl-3">
+                        online
+                      </span>
+                    )}
+                  </p>
                   <p className="text-sm text-gray-500 truncate">
                     {lastMessage
                       ? `${lastMessage.content.substring(0, 20)}...`

@@ -15,7 +15,9 @@ const Login = () => {
     if (storedUser) {
       const user = JSON.parse(storedUser);
       setCurrentUser(user);
-      navigate(`/chat`);
+      navigate(
+        `/chat/0E8vmC0PcPNx0q7BIcO4bcapVWO2/AfF1lI7Gl6VAREirgWoRozAAQfw1/1mPRX1JgejlEYDsiEL93`
+      );
     }
   }, [navigate, setCurrentUser]);
 
@@ -29,7 +31,7 @@ const Login = () => {
 
       setCurrentUser(data.user);
 
-      navigate("/chat");
+      navigate("/chat/0E8vmC0PcPNx0q7BIcO4bcapVWO2/1mPRX1JgejlEYDsiEL93");
     } catch (err) {
       setError("Invalid credentials. Please try again.");
     }
