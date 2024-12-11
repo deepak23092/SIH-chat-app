@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "https://sih-chat-app-rho.vercel.app/api";
+const BASE_URL = "https://sih-chat-app-1.onrender.com/api";
 
 export const getUserList = async (userId) =>
   axios.get(`${BASE_URL}/conversation/chats/${userId}`);

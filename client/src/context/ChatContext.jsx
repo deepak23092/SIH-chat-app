@@ -13,7 +13,7 @@ export const ChatProvider = ({ children }) => {
 
   useEffect(() => {
     if (productId) {
-      const newSocket = io("https://sih-chat-app-rho.vercel.app", {
+      const newSocket = io("https://sih-chat-app-1.onrender.com", {
         transports: ["websocket"],
         reconnection: true,
         reconnectionAttempts: 5,
