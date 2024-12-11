@@ -194,13 +194,6 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
                 </div>
               </div>
             ))}
-            {typingUsers[selectedUser?._id] && (
-              <div className="p-2 my-2 flex justify-start">
-                <div className="inline-block px-4 py-2 rounded-lg text-sm font-bold bg-gray-300 text-green-500">
-                  Typing...
-                </div>
-              </div>
-            )}
             <div ref={messagesEndRef}></div>
           </div>
 
@@ -252,7 +245,7 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
                   className="flex-1 p-2 border rounded text-sm"
                   placeholder="Type a message"
                   value={newMessage}
-                  onChange={handleTyping}
+                  onChange={(e) => setNewMessage(e.target.value)}
                 />
                 <button
                   className="px-2 sm:px-4 py-2 bg-blue-500 text-white rounded text-sm"

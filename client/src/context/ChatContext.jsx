@@ -55,9 +55,6 @@ export const ChatProvider = ({ children }) => {
         setSelectedUser,
         messages,
         setMessages,
-        onlineUsers,
-        setOnlineUsers,
-        typingUsers,
         socket,
       }}
     >
