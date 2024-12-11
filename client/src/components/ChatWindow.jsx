@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ChatContext } from "../context/ChatContext";
 import { getMessages } from "../services/api";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiMic, FiLoader } from "react-icons/fi";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
@@ -19,7 +19,11 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
   const [newMessage, setNewMessage] = useState("");
   const [offer, setOffer] = useState("");
   const [activeTab, setActiveTab] = useState("CHAT");
+  const [isRecording, setIsRecording] = useState(false); // For recording state
+  const [loadingTranscription, setLoadingTranscription] = useState(false); // For transcription state
   const messagesEndRef = useRef(null);
+  const mediaRecorderRef = useRef(null); // For media recorder
+  const audioChunksRef = useRef([]); // For storing audio chunks
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -129,6 +133,72 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
   };
 
   const presetPrices = product ? calculatePresetPrices(product.price) : [];
+
+  const handleVoiceStart = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = handleVoiceEnd;
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+    }
+  };
+
+  const handleVoiceEnd = async () => {
+    if (!mediaRecorderRef.current) return;
+
+    // Stop the recording and update the state
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
+
+    // Create an audio blob from the recorded chunks
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+    const formData = new FormData();
+
+    // Append the audio file and model name to the form data
+    formData.append("file", audioBlob);
+    formData.append("model", "saaras:v1");
+
+    // Start transcription loading state
+    setLoadingTranscription(true);
+
+    try {
+      // Make the API call to Sarvam's speech-to-text endpoint
+      const response = await fetch(
+        "https://api.sarvam.ai/speech-to-text-translate",
+        {
+          method: "POST",
+          headers: {
+            "api-subscription-key": "8ffc22f4-2b5f-43e9-9c2c-c93352156728",
+          },
+          body: formData,
+        }
+      );
+
+      // Parse the API response
+      const data = await response.json();
+
+      // Check if transcription was successful and update the message input
+      if (data?.transcript) {
+        setNewMessage((prev) => `${prev} ${data.transcript}`);
+      } else {
+        console.error("Transcription failed:", data);
+      }
+    } catch (error) {
+      console.error("Error during transcription:", error);
+    } finally {
+      // End transcription loading state
+      setLoadingTranscription(false);
+    }
+  };
 
   return (
     <div className="w-full h-screen flex flex-col">
@@ -253,7 +323,29 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
                 >
                   Send
                 </button>
+                <button
+                  className={`px-2 sm:px-4 py-2 ${
+                    isRecording ? "bg-red-500" : "bg-gray-500"
+                  } text-white rounded text-sm`}
+                  onClick={
+                    isRecording
+                      ? () => mediaRecorderRef.current.stop()
+                      : handleVoiceStart
+                  }
+                  disabled={loadingTranscription}
+                >
+                  {isRecording ? (
+                    <FiLoader className="animate-spin" />
+                  ) : (
+                    <FiMic size={16} />
+                  )}
+                </button>
               </div>
+              {loadingTranscription && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Transcribing audio...
+                </p>
+              )}
             </div>
           ) : (
             <div className="flex flex-col p-2 sm:p-4">

@@ -25,7 +25,6 @@ export const ChatProvider = ({ children }) => {
 
       // Handle receiving messages
       newSocket.on("receive-message", (messages) => {
-        console.log("received messages: ", messages);
         setMessages((prev) => [...messages]);
       });
 
