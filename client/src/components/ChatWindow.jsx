@@ -111,6 +111,7 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
       const messageData = {
         senderId: senderId,
         receiverId: receiverId,
+        productId,
         content: offerMessage,
         timestamp: new Date().toISOString(),
       };
