@@ -4,6 +4,7 @@ const cors = require("cors");
 
 const connectDB = require("./config/db");
 const conversation = require("./routes/conversation");
+const openAi = require("./routes/openai");
 
 const app = express();
 connectDB();
@@ -15,5 +16,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/conversation", conversation);
+app.use("/api/openai", openAi);
 
 module.exports = app;
