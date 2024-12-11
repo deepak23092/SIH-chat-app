@@ -88,7 +88,6 @@ const ChatList = ({ onSelectChat }) => {
 
     return timestampB - timestampA;
   });
-  console.log(messages);
 
   return (
     <div className="w-full md:w-[30rem] h-screen border-r border-gray-300 flex flex-col">

@@ -1,25 +1,24 @@
-const translate = require("google-translate-api-x");
+const { Translate } = require("@google-cloud/translate").v2;
+require("dotenv").config();
 
-const translateText = async (text, targetLanguage, sourceLanguage = "en") => {
+const CREDENTIALS = JSON.parse(process.env.CREDENTIALS);
+
+const translate = new Translate({
+  credentials: CREDENTIALS,
+  projectId: CREDENTIALS.project_id,
+});
+
+const translateText = async (text, targetLanguage) => {
   try {
     if (!text || !targetLanguage) {
       throw new Error("Invalid text or target language.");
     }
 
-    const response = await translate(text, {
-      from: sourceLanguage,
-      to: targetLanguage,
-    });
-
-    if (response && response.text) {
-      return response.text;
-    } else {
-      console.error("Translation error:", response);
-      throw new Error("Translation not found.");
-    }
+    let [translation] = await translate.translate(text, targetLanguage);
+    return translation;
   } catch (error) {
-    console.error("Error during translation:", error.message);
-    throw new Error("Translation failed.");
+    console.log(`Error at translate text --> ${error}`);
+    return text;
   }
 };
 

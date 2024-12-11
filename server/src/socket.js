@@ -47,11 +47,7 @@ module.exports = (io) => {
           // Translate message if needed
           if (senderLan !== receiverLan) {
             try {
-              translatedContent = await translateText(
-                content,
-                receiverLan,
-                senderLan
-              );
+              translatedContent = await translateText(content, receiverLan);
               console.log(
                 `Translated message from '${senderLan}' to '${receiverLan}':`,
                 translatedContent
@@ -93,7 +89,7 @@ module.exports = (io) => {
           await chat.save();
 
           // Emit the message to the receiver's room
-          io.to(receiverId).emit("receive-message", newMessage);
+          io.to(productId).emit("receive-message", chat.messages);
           console.log("Message sent to room:", receiverId);
         } catch (error) {
           console.error("Error handling send-message:", error.message);

@@ -182,7 +182,11 @@ const ChatWindow = ({ senderId, receiverId, productId, onSelectChat }) => {
                       : "bg-gray-300 text-black"
                   }`}
                 >
-                  <p>{msg.content}</p>
+                  <p>
+                    {msg.senderId !== senderId
+                      ? msg.translatedContent
+                      : msg.content}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {format(new Date(msg.timestamp), "hh:mm a, MMM d")}
                   </p>
