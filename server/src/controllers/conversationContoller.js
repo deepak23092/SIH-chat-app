@@ -1,5 +1,5 @@
 const Conversation = require("../models/Conversation");
-const db = require("../firebase"); // Firestore database instance
+const db = require("../firebase");
 const { doc, getDoc, collection } = require("firebase/firestore");
 
 exports.getUsers = async (req, res) => {
@@ -70,5 +70,34 @@ exports.getMessages = async (req, res) => {
     res
       .status(500)
       .json({ message: "Fetching messages failed.", error: error.message });
+  }
+};
+
+// Fetch user by ID
+exports.getUserById = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Since your schema doesn't directly define users, fetch based on participants
+    const chat = await Conversation.findOne({ participants: userId });
+    if (!chat) {
+      return res
+        .status(404)
+        .json({ message: "User not found in conversations." });
+    }
+
+    // Extract participant data
+    const user = {
+      id: userId,
+      chats: chat.messages.filter(
+        (msg) => msg.senderId === userId || msg.receiverId === userId
+      ),
+    };
+
+    res.status(200).json(user);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to fetch user.", error: error.message });
   }
 };

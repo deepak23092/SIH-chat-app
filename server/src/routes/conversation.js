@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getUsers,
   getMessages,
+  getUserById,
 } = require("../controllers/conversationContoller");
 const Conversation = require("../models/Conversation");
 
@@ -12,6 +13,9 @@ router.get("/chats/:userId", getUsers);
 
 // Endpoint to get messages
 router.get("/:userId/:chatPartnerId", getMessages);
+
+//Endpoint to get a user by id
+router.get("/:userId", getUserById);
 
 // send message
 router.post("/messages", async (req, res) => {
